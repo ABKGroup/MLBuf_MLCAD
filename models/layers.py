@@ -25,7 +25,7 @@ class SelfAttentionBlock(nn.Module):
 
 class MaskClusterAttention(nn.Module):
     """
-    multi-head self-attention，
+    multi-head self-attention,
     mask features from different cluster
     """
 
@@ -57,12 +57,7 @@ class MaskClusterAttention(nn.Module):
         return mask
 
     def forward(self, x, cluster_id):
-        """
-        x: shape [N, D],  regard x as a sequence when batch_size=1
-        cluster_id: shape [N], cluster_id[i] represent the clusterID for node i (0..K-1 or -1)
 
-        return: shape [N, D], perform self-attention in each cluster
-        """
         # 1)  [1, N, D]
         x_in = x.unsqueeze(0)
 

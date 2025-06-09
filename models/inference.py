@@ -20,9 +20,6 @@ def inference(model, model_save_path, test_loader, device, buf_info_df, buf_type
         print(f"File={file_key}, Net={net_name}, #Layers={len(layers_data)}")
 
         with torch.no_grad():
-            # Similar structure to recursive_training, but:
-            # - No loss, no optimizer steps
-            # - Always feed the model's *own* predictions
             num_level = 0
             max_level = len(layers_data)
             current_level = max_level - num_level - 1
@@ -80,9 +77,6 @@ def inference(model, model_save_path, test_loader, device, buf_info_df, buf_type
             if len(all_buffers_all_type) == 0:
                 dummy_ids = torch.zeros(pred_features[0].size(0), dtype=torch.long)
                 all_buffers_all_type = [dummy_ids]
-            # min_len = min(len(all_buffers_all_type), len(pred_features))
-            # all_buffers_all_type = all_buffers_all_type[:min_len]
-            # pred_features = pred_features[:min_len]
             if len(all_buffers_all_type) < len(pred_features):
                 all_buffers_all_type.append(torch.zeros(pred_features[-1].size(0), dtype=torch.long))
             buffer_tree = util.build_tree_bottom_up(pred_features, all_buffers_all_type, buf_info_df, buf_type_map,
@@ -110,9 +104,6 @@ def inference_for_testing(model, test_loader, device, buf_info_df, buf_type_map,
         # print(f"File={file_key}, Net={net_name}, #Layers={len(layers_data)}")
 
         with torch.no_grad():
-            # Similar structure to recursive_training, but:
-            # - No loss, no optimizer steps
-
             for lvl in range(len(layers_data)):
                 for key, val in layers_data[lvl].items():
                     if isinstance(val, torch.Tensor):

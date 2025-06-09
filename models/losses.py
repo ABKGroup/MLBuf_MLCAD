@@ -20,10 +20,6 @@ def cluster_loss(embeddings, ground_truth, weight_pos=1.0,
     device = embeddings.device
     # remove driver
     sink_mask = (ground_truth != -1)
-    # print("test sink mask: ", sink_mask)
-    # print(f"embeddings shape: {embeddings.shape}")  # Expected: [15, 128]
-    # print(f"ground_truth shape: {ground_truth.shape}")  # Expected: [15]
-    # print(f"sink_mask shape: {sink_mask.shape}, sink_mask sum: {sink_mask.sum()}")  # Expected: [15] with sum = 9
 
     embeddings = embeddings[sink_mask]
     ground_truth = ground_truth[sink_mask]
@@ -61,9 +57,7 @@ def cluster_loss(embeddings, ground_truth, weight_pos=1.0,
     # count how many pos pairs, neg pairs (excluding diagonal)
     num_pos = (y * mask_no_self).sum()
     num_neg = ((1 - y) * mask_no_self).sum()
-    # if num_pos=0 or num_neg=0 => avoid division
-    # pos_mean = sum(pos_vals)/num_pos, etc.
-    # fallback=0
+
     if num_pos > 0:
         loss_pos_mean = pos_vals.sum() / num_pos
     else:
@@ -77,13 +71,6 @@ def cluster_loss(embeddings, ground_truth, weight_pos=1.0,
     # 7) combine with weights
     total_loss = weight_pos * loss_pos_mean + weight_neg * loss_neg_mean
 
-    # --- original
-    # # Combine positive and negative losses
-    # loss_matrix = positive_loss + negative_loss  # Shape: [batch_size, num_sinks, num_sinks]
-    #
-    # # Average the loss across all pairs (excluding self-pairs)
-    # mask = 1 - torch.eye(num_sinks, device=embeddings.device)  # Exclude diagonal (self-pairs)
-    # total_loss = torch.sum(loss_matrix * mask) / torch.sum(mask)
 
     return total_loss
 
@@ -105,10 +92,8 @@ def location_loss(type_gt, loc_pred, loc_gt):
     device = loc_pred.device
     # Only calculate loss for those type_gt != 0
     loc_mask = (type_gt != 0)
-    # print('test loc mask: ', loc_mask.sum())
     if loc_mask.any():
         loc_pred_selected = loc_pred[loc_mask]  # shape [?, output_dim_bloc]
-        # print('test loc pred: ', loc_pred_selected)
         loc_gt_selected = loc_gt[loc_mask]  # shape [?, output_dim_bloc]
         loss_loc = F.mse_loss(loc_pred_selected, loc_gt_selected)
     else:
@@ -191,7 +176,6 @@ def compute_cap_wirelength_penalty(features,
 
     # compute wire_k => sum over i p_{i,k} * dist(i,k)
     dist_mat = manhattan_dist_matrix(features[:, :2], cluster_buf_loc)  # [N,K]
-    # print("test2: ", cluster_probs.shape, dist_mat.shape)
     wire_k = (cluster_probs * dist_mat).sum(dim=0)  # [K]
     wire_k = wire_k * has_buf_mask  # zero out "no buffer" clusters
     wire_k_meter = 0.9 * (wire_k / (dbu * 1e+6))  # meter
@@ -213,7 +197,6 @@ def compute_cap_wirelength_penalty(features,
     # ---- （B）update driver wirelength and drvier output cap
     driver_xy = torch.tensor([0, 0]).to(device)
     cluster_frac_k = cluster_probs.sum(dim=0)  # [K], sum of p_{i,k} across i
-    # 2.1 => we need sink_dist_mat: manhattan(driver-> sink) => [N]
     sink_driver_dist = torch.abs(features[:, :2] - driver_xy).sum(dim=-1)  # [N]
     dist_driver_sink_k = (sink_driver_dist.unsqueeze(-1) * cluster_probs).sum(dim=0)  # [K]
     dist_driver_buf = manhattan_dist_matrix(driver_xy.unsqueeze(0), cluster_buf_loc)  # => shape [1,K]

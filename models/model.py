@@ -26,8 +26,6 @@ class MLBuf(nn.Module):
         # --------- 3) Predict buffer type & loc -----------
         # 3.1 Type: aggregate features within clusters
         type_att_in_dim = clustering_output_dim + (input_dim_elc + input_dim_share)
-        # self.cluster_type_att = MaskClusterAttention(type_att_in_dim, num_heads
-        #                                              )
         self.cluster_type_att = SelfAttentionBlock(type_att_in_dim, num_heads
                                                    )
         self.type_fc = DecoderMLP(
@@ -36,10 +34,7 @@ class MLBuf(nn.Module):
 
         # 3.2 Location: input = cluster_dim + input_dim_loc
         loc_att_in_dim = clustering_output_dim + (input_dim_loc + input_dim_share) + output_dim_btype
-        # self.cluster_loc_att = MaskClusterAttention(loc_att_in_dim, num_heads
-        #                                             )
-        self.cluster_loc_att = SelfAttentionBlock(loc_att_in_dim, num_heads
-                                                  )
+        self.cluster_loc_att = SelfAttentionBlock(loc_att_in_dim, num_heads)
         self.loc_fc = DecoderMLP(loc_att_in_dim, hidden_dim, output_dim_bloc)
 
     def forward(self, x, x_loc, x_elc, temperature=1.0):

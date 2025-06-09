@@ -30,9 +30,6 @@ def adjust_model_output(features, loc_features, elc_features,
     device = features.device
     # step 0: read buffer info
     # step 1: separate "no buffer" vs "with buffer"
-
-    # no_buf_mask = (cluster_id == -1)
-    # yes_buf_mask = (cluster_id != -1)
     buffer_type_argmax = torch.argmax(buffer_types, dim=-1)  # [N]
     buffer_type_argmax[0] = 0
     cluster_id[0] = -1  # driver node
@@ -61,7 +58,6 @@ def adjust_model_output(features, loc_features, elc_features,
         #  cluster's buffer loc & type => already have buffer_locations[mask_c], buffer_types[mask_c]
         #  typically these are same for that cluster, so we can just pick the first
         buf_xy = buffer_locations[mask_c][0]  # shape [1, 2]
-        # buf_type = buffer_types[mask_c][0]  # shape [1, btype_dim]
         buf_type_id = buffer_type_argmax[mask_c][0].item()  # shape [1, 1]
 
         # Build the new "buffer node" feature vector:
@@ -69,11 +65,10 @@ def adjust_model_output(features, loc_features, elc_features,
         # - X, Y => predicted from buf_xy
         # - Manhattan Dist => dist from the driver (0,0)
         # - In/Out Slew, In/Out Cap
-        # - MaxOutCap, Fanout =>
+        # - MaxOutCap, Fanout 
 
         # save the node type as Buffer
         node_type_val_buf = torch.tensor([1, 0, 0], device=device) 
-        # node_type_val = x_no[1][0:2]  # same with "Sink"
         node_type_val = torch.tensor([0, 0, 1], device=device) 
         x_val, y_val = buf_xy.squeeze(0).cpu().numpy()
         driver_x, driver_y = 0, 0
@@ -85,7 +80,6 @@ def adjust_model_output(features, loc_features, elc_features,
         in_cap_val = row["capacitance"].values[0] * 1e14  # (based on buf_type)
         out_cap_val = 0.0
         max_out_cap = row["max_capacitance"].values[0] * 1e14
-        # fanout_val = len(buffer_locations[mask_c])
         buf_res = row["res"].values[0] * 0.01  # (based on buf_type)
 
         x_val_tensor = torch.tensor([x_val], device=device)
@@ -96,10 +90,9 @@ def adjust_model_output(features, loc_features, elc_features,
         in_cap_val_tensor = torch.tensor([in_cap_val], device=device)
         out_cap_val_tensor = torch.tensor([out_cap_val], device=device)
         max_out_cap_tensor = torch.tensor([max_out_cap], device=device)
-        # fanout_val_tensor = torch.tensor([fanout_val], device=device)
         buf_res_tensor = torch.tensor([buf_res], device=device)
 
-        # Construct the 13-d feature vector
+        # Construct the 12-d feature vector
         new_buf_feat = torch.cat([
             node_type_val, x_val_tensor, y_val_tensor, manh_val_tensor,
             in_slew_val_tensor, out_slew_val_tensor,
@@ -139,7 +132,7 @@ def adjust_model_output(features, loc_features, elc_features,
         loc_yes = torch.zeros(0, loc_features.size(1), device=device)
         elc_yes = torch.zeros(0, elc_features.size(1), device=device)
 
-        # Finally, combine the "no buffer" nodes with the "new buffer" nodes
+    # Finally, combine the "no buffer" nodes with the "new buffer" nodes
     x_next = torch.cat([x_no, x_yes], dim=0)
     x_next_buf = torch.cat([x_no, x_yes_buf], dim=0)
     x_loc_next = torch.cat([loc_no, loc_yes], dim=0)
@@ -148,7 +141,6 @@ def adjust_model_output(features, loc_features, elc_features,
     # -----------------update features------------------
     driver_i = 0
     driver_output_cap, driver_out_slew = calculate_updated_features(x_next, device)
-    # print("test drvr cap&slew: ", driver_output_cap, driver_out_slew)
     x_next[driver_i, 9] = driver_output_cap
     x_next[driver_i, 7] = driver_out_slew
     x_next[1:, 6] = driver_out_slew
@@ -167,7 +159,6 @@ def adjust_model_output(features, loc_features, elc_features,
 def calculate_updated_features(x_next, device):
     """
     Compute driver's updated output_cap and output_slew.
-    Handles the corner‑case where the driver has no children.
     """
     wire_res   = 3.5714e+02
     wire_cap   = 8.88758e+03
@@ -186,7 +177,7 @@ def calculate_updated_features(x_next, device):
         dy = (children_y.max() - children_y.min()).item()
 
     wire_length_m   = 1.2 * ((dx + dy) / (dbu * 1e6))      # metres
-    total_wire_cap  = wire_length_m * wire_cap             # farads
+    total_wire_cap  = wire_length_m * wire_cap         
 
     # ----- 2. Capacitive load -----
     children_in_cap = x_next[1:, 8].sum().item() if children_x.numel() > 1 else 0.0
@@ -198,40 +189,6 @@ def calculate_updated_features(x_next, device):
 
     return driver_output_cap, driver_out_slew
 
-def calculate_updated_features_needCheck(x_next, device):
-    """
-        calculate output slew, output cap,
-    """
-    wire_res = 3.5714e+04
-    wire_cap = 8.88758e+03
-    elmore_skew_factor_ = 1.39e+10
-    dbu = 2000
-    driver_i = 0
-    # wirelength --> HPWL*1.2
-    children_x = x_next[1:, 3]
-    children_y = x_next[1:, 4]
-    if children_x.numel() > 0:
-        min_x, max_x = children_x.min(), children_x.max()
-    else:
-        min_x, max_x = 0, 0  
-    # min_x, max_x = children_x.min(), children_x.max()
-    # min_y, max_y = children_y.min(), children_y.max()
-    if children_y.numel() > 0:
-        min_y, max_y = children_y.min(), children_y.max()
-    else:
-        min_y, max_y = 0, 0  
-    dx = (max_x - min_x).item()
-    dy = (max_y - min_y).item()
-    wire_length_m = 1.2 * ((dx + dy) / (dbu * 1e+6))  # meter
-    total_wire_cap = wire_length_m * wire_cap  # (F)
-
-    # output cap
-    children_in_cap = x_next[1:, 8].sum()
-    driver_output_cap = total_wire_cap + children_in_cap
-
-    r_drvr = x_next[driver_i, 11].item()
-    driver_out_slew = (r_drvr + wire_length_m * wire_res) * driver_output_cap * elmore_skew_factor_
-    return driver_output_cap, driver_out_slew
 
 
 def adjust_cluster_id(cluster_id):

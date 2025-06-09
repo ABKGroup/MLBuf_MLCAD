@@ -38,7 +38,7 @@ def recursive_training(
         inputs: A single training sample or batch of data (features, ground truths, etc.).
         optimizer: Optimizer instance.
         teacher_forcing_prob: Probability (0~1) of using ground-truth as input (teacher forcing)
-                              instead of the model's own prediction.
+                              instead of the model's own prediction. (This parameter is not used in this version)
         device: torch device (cpu/cuda).
         penalty_flag_list: [area_penalty, wire_penalty, cap_penalty]
 
@@ -115,7 +115,7 @@ def recursive_training(
         # Gumbel-Softmax => buffer_type_probs
         buffer_type_probs = F.gumbel_softmax(buffer_type_pred, tau=current_tau, hard=False)
 
-        # --area penalty warning!!
+        # --area penalty 
         area_tensor = torch.tensor(
             [0, 1.064, 1.862, 3.458, 6.65, 13.03], device=device)
         epsilon = 1e-8
@@ -157,18 +157,17 @@ def recursive_training(
         cap_penalty_sum += cap_penalty.item()
 
         # -------------------------------
-        # 4) Store predictions from this level
+        # 3) Store predictions from this level
         # -------------------------------
         all_buffers.append((buffer_type_probs, buffer_location_pred))
         modified_cluster_id = util.adjust_cluster_id(cluster_id)
         cluster_ids_history.append(modified_cluster_id.clone().detach())
 
         # -------------------------------
-        # 5) Decide whether to continue
-        #    Check if "no new buffer" => all predicted type = 0, for example
+        # 4) Decide whether to continue
+        #    Check if "no new buffer" => all predicted buffer ype = 0
         # -------------------------------
         buffer_type_pred = torch.argmax(buffer_type_pred, dim=-1)  # shape [batch_size]
-        # A simple check: if all predicted types == 0
         if buffer_type_pred.eq(0).all() and not buffer_type_labels.eq(0).all():
             still_generating = True
             num_level += 1
@@ -188,7 +187,7 @@ def recursive_training(
             num_level += 1
 
             # -------------------------------
-            # 6) Teacher Forcing 
+            # 5) Teacher Forcing 
             # -------------------------------
             current_level = max_level - num_level - 1
             use_ground_truth = (random.random() < teacher_forcing_prob)
@@ -211,9 +210,7 @@ def recursive_training(
 
 
 def train_one_epoch(model, train_loader, optimizer, epoch, args, device, penalty_flag_list, weight_list):
-    """
-    Train the model for one epoch using teacher forcing + scheduled sampling.
-    """
+
     model.train()
 
     # Decay teacher_forcing_prob from 1.0 to some lower value over training
@@ -273,8 +270,6 @@ def train_one_epoch(model, train_loader, optimizer, epoch, args, device, penalty
         # ------ Cap penalty
         driver_cap_pen = F.relu(driver_output_cap - pred_feature_list[0][0, 10])
 
-
-        # total_loss = area_penalty + local_loss_sum
         total_loss = local_loss_sum + penalty_flag_list[
             1] * driver_wire_pen + penalty_flag_list[2] * driver_cap_pen + weight_list[3] * penalty_flag_list[
                          0] * global_area_penalty
@@ -283,7 +278,6 @@ def train_one_epoch(model, train_loader, optimizer, epoch, args, device, penalty
         total_loss.backward()
         optimizer.step()
 
-        # total_loss_np = total_loss.detach.numpy()
         total_loss_sum += total_loss.item()
         cluster_loss_sum += cluster_loss
         type_loss_sum += type_loss
@@ -330,8 +324,6 @@ def train_one_epoch(model, train_loader, optimizer, epoch, args, device, penalty
 def test_model(model, val_dataloader, device, max_wirelength_constraints, penalty_flag_list, epoch, weight_list):
     """
     Evaluate the model on a test dataset in inference mode (no teacher forcing).
-    You can still compute average losses if you keep track of them, but
-    typically at test time you run pure inference.
     """
     model.eval()
 
@@ -361,7 +353,7 @@ def get_args():
     parser.add_argument('-act_c', type=str, default='ELU')
     parser.add_argument('-num_heads', type=int, default=1)
     parser.add_argument('-output_dim_bloc', type=int, default=2)
-    parser.add_argument('-output_dim_btype', type=int, default=6)  # warning:buftype=6
+    parser.add_argument('-output_dim_btype', type=int, default=6)  # buf_type=6
     parser.add_argument('-input_dim_share', type=int, default=12)
     parser.add_argument('-input_dim_loc', type=int, default=3)
     parser.add_argument('-input_dim_els', type=int, default=5)

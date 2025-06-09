@@ -4,14 +4,13 @@ import matplotlib.pyplot as plt
 
 def plot_losses(epoch_losses, save_path):
     """
-    Plots the training losses over epochs in four subplots.
+    Plots the training losses over epochs in seven subplots.
 
     Args:
         epoch_losses (dict): A dictionary containing lists of losses per epoch.
-                             Keys should be 'total_loss', 'cluster_loss',
-                             'type_loss', and 'location_loss'.
+
     """
-    fig, axes = plt.subplots(3, 3, figsize=(18, 16))  # 2 rows, 2 cols
+    fig, axes = plt.subplots(3, 3, figsize=(18, 16))  # 3 rows, 3 cols
 
     loss_names = ["Total Loss", "Cluster Loss", "Type Loss", "Location Loss", 
                   "Global Area Penalty", "Wire Penalty",

@@ -130,8 +130,6 @@ class NetTreeDataset(Dataset):
         # Buffer: 1,0,0
         # Driver: 0,1,0
         # Sink: 0,0,1
-        # self.node_type_to_idx = {t: i for i, t in enumerate(self.node_types)}
-        # Warning! buffer type
         self.buf_type_map = {
             '-1': 0,
             'BUF_X2': 1,
@@ -140,10 +138,6 @@ class NetTreeDataset(Dataset):
             'BUF_X16': 4,
             'BUF_X32': 5
         }
-        # self.buf_type_map = {
-        #     '-1': 0,
-        #     'BUF_X2': 1,
-        # }
 
     def __len__(self):
         return len(self.file_net_pairs)
@@ -172,8 +166,6 @@ class NetTreeDataset(Dataset):
         # post_file = self.file_key_to_file[file_key]
 
         # 1) Read CSV for this net
-        # df = pd.read_csv(post_file)
-        # df = df[df["Net Name"] == net_name].reset_index(drop=True)
         df = self.post_dfs[file_key]
         df = df[df["Net Name"] == net_name].reset_index(drop=True)
 
@@ -287,15 +279,10 @@ class NetTreeDataset(Dataset):
                 for nid in input_nids
                 if node_dict[nid]["depth"] == depth_i and node_dict[nid]["type"] == "Buffer"
             ]
-            # if len(depth_buf_orders) == 0:
-            #     # only driver?
-            #     max_bo = 0
-            # else:
             if depth_i == max_depth:
                 max_bo = 0
             else:
                 max_bo = max(depth_buf_orders)
-            # print("test0 Max buffer order: ", max_bo)
 
             # 2) Find features from self.mid_data[file_key][net_name][max_bo]
             mid_map = None
@@ -315,8 +302,6 @@ class NetTreeDataset(Dataset):
             buffer_type_list = []
             buffer_loc_list = []
 
-            # We'll define a helper: if a node at depth i is "driven by" a node at depth i-1 that is a Buffer,
-            # we unify them in the same cluster. We'll treat "buffer" as we did for sinks in the older example.
             def get_buffer_parent(nid):
                 """
                 Traverse up until we find a parent that is 'Buffer' at depth = (depth_i - 1).
@@ -330,7 +315,7 @@ class NetTreeDataset(Dataset):
                     p = node_dict[p]["parent"]
                 return None, None
 
-            # We'll keep a map: buffer_parent -> cluster_id
+            # Map: buffer_parent -> cluster_id
             buffer_parent_to_cid = {}
             next_cluster_id = 0
 
@@ -419,9 +404,8 @@ class NetTreeDataset(Dataset):
                     y_rel = y_m - driver_y
                     dist = abs(x_rel) + abs(y_rel)
 
-                    # !!--- Set max output cap of buffer based on buf_info ----#
+                    # --- Set max output cap of buffer based on buf_info ----#
                     if info["type"] == "Buffer":
-                        # max_cp_m = -1.0
                         row = self.buf_info_df[self.buf_info_df["buf_type"] == info["buf_type"]]
                         max_cp_m = row["max_capacitance"].values[0]
                         max_cp_m *= 1e14
@@ -436,7 +420,7 @@ class NetTreeDataset(Dataset):
                     feat_vec = torch.cat([ntype_onehot, numeric_feats], dim=0)
 
                 else:
-                    print("[Warning!!!!!] can not find corresponding mid file: ", file_key, net_name,
+                    print("[Warning] can not find corresponding mid file: ", file_key, net_name,
                           max_bo)
 
                 input_feats_list.append(feat_vec)
@@ -499,9 +483,6 @@ def collate_fn(batch):
 
 
 def get_dataloaders(data_dirs, buf_info_df, batch_size=1, split_ratios=(0.7, 0.15, 0.15), seed=42):
-    # dataset = NetTreeDataset(data_dir, buf_info_df)
-    # dataloader = DataLoader(dataset, batch_size=batch_size,
-    #                         shuffle=shuffle, collate_fn=collate_fn)
     full_dataset = NetTreeDataset(data_dirs, buf_info_df)
     total_size = len(full_dataset)
     train_size = int(split_ratios[0] * total_size)
@@ -523,7 +504,7 @@ def get_dataloaders(data_dirs, buf_info_df, batch_size=1, split_ratios=(0.7, 0.1
 
 def compute_feature_stats(layers_data):
     """
-    input feature statistics：min, max, mean, std
+    input feature statistics: min, max, mean, std
     """
     all_feats = []
 
