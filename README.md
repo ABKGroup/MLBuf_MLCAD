@@ -20,9 +20,13 @@ MLBuf/
 │   ├── losses.py             # Loss functions
 │   └── layers.py             # Custom layers or modules
 ├── utils/                    # Utility functions and helper scripts
+│   ├── adhoc_baseline.py     # Ad-Hoc baseline for comparison
 │   ├── util.py               # Utility functions such as feature update
 │   └── plot_utils.py         # Visualize training curves
-├── scripts/                  # Scripts for data collection & global placement
+├── scripts/                  # Scripts for global placement and evaluation
+│   ├── invs_scripts          # Commercial tool scripts for generating post-route results 
+│   └── OR_scripts            # OpenROAD scripts for global placement
 ├── train.py                  # Entry point for training the model
+├── OR_branch_integration/    # MLBuf-RePlAce
 ├── LICENSE                   # License
 └── README.md                 # Project documentation
