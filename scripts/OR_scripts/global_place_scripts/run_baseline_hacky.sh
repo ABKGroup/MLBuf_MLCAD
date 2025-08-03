@@ -13,6 +13,6 @@ export TIMERSZ="${SAVE_DIR}/hacky_rsz.csv"
 
 # Save buffered trees
 export PROJ_DIR=`pwd | grep -o "/\S*/MLBuf"`
-export PROJ_DIR="${PROJ_DIR}/flows"
+#export PROJ_DIR="${PROJ_DIR}/flows"
 
 openroad run_replace_hacky.tcl | tee run_replace_hacky.log
