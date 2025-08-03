@@ -30,3 +30,34 @@ MLBuf/
 ├── OR_branch_integration/    # MLBuf-RePlAce
 ├── LICENSE                   # License
 └── README.md                 # Project documentation
+```
+
+## Training MLBuf
+To train MLBuf, run the following command:
+```bash
+python train.py
+```
+
+## Integrating MLBuf into OpenROAD for MLBuf-RePlAce
+1. **Build OpenROAD** using the version provided in:
+```bash
+OR_branch_integration/OpenROAD
+```
+2. Run **MLBuf-RePlAce**
+```bash
+scripts/OR_scripts/global_place_scripts/run_mlbuf.sh
+```
+3. (Optional) Run baseline comparisions:
+
+- **AD-Hoc Baseline**
+```bash
+scripts/OR_scripts/global_place_scripts/run_baseline_adhoc.sh
+```
+- **RePlAce** (no timing-driven mode [commit hash: df581be])
+```bash
+scripts/OR_scripts/global_place_scripts/run_baseline_no_timing.sh
+```
+- **TD-RePlAce** (default virtual buffering-based timing driven global placement in OpenROAD [commit hash: df581be])
+```bash
+scripts/OR_scripts/global_place_scripts/run_baseline_rsz_virtual.sh
+```
