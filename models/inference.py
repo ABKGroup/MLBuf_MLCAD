@@ -108,8 +108,7 @@ def inference_for_testing(model, test_loader, device, buf_info_df, buf_type_map,
                 for key, val in layers_data[lvl].items():
                     if isinstance(val, torch.Tensor):
                         layers_data[lvl][key] = val.to(device)
-
-            (all_buffers, buffer_tree, pred_features, local_loss_sum, cluster_loss,
+            (all_buffers, pred_features, local_loss_sum, cluster_loss,
              type_loss, location_loss, area_penalty_sum, total_area,
              driver_wirelength, driver_output_cap, cap_penalty_sum, wire_penalty_sum) = recursive_training(
                 model,

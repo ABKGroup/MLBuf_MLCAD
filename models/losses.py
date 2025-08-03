@@ -238,3 +238,11 @@ def manhattan_dist_matrix(sink_coords, cluster_loc):
     diff = torch.abs(sink_expand - clus_expand)  # [N,K,2]
     dist_mat = diff.sum(dim=-1)  # [N,K]
     return dist_mat
+
+
+
+def compute_area_penalty(buffer_type_probs, area_tensor):
+    # This function actually doesn't perform backpropogation during training
+    predict_area = (buffer_type_probs * area_tensor).sum(dim=-1)  # [N]
+    area_penalty = F.relu(predict_area.sum() - len(predict_area)) * 2000
+    return area_penalty

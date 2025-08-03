@@ -2,10 +2,11 @@ import pandas as pd
 import torch
 from torch.optim import Adam
 from models.model import MLBuf
-from models.inference_model_0418 import inference_for_testing, inference
+from models.inference import inference_for_testing, inference
 from models.losses import *
 import utils.util as util
 import argparse
+import os
 from data.data_loader import get_dataloaders
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
@@ -296,7 +297,7 @@ def train_one_epoch(model, train_loader, optimizer, epoch, args, device, penalty
     total_loss_avg = total_loss_sum / batch_num
     cluster_loss_avg = cluster_loss_sum / batch_num
     type_loss_avg = type_loss_sum / batch_num
-    area_penalty_avg = area_penalty_sum / batch_num
+    # area_penalty_avg = area_penalty_sum / batch_num
     global_area_penalty_avg = global_total_area_penalty / batch_num
     location_loss_avg = location_loss_sum / batch_num
     wire_penalty_avg = total_wire_penalty / batch_num
@@ -305,7 +306,7 @@ def train_one_epoch(model, train_loader, optimizer, epoch, args, device, penalty
     print(f"Epoch {epoch} - Cluster Loss = {cluster_loss_avg:.4f}")
     print(f"Epoch {epoch} - Type Loss = {type_loss_avg:.4f}")
     print(f"Epoch {epoch} - Loc Loss = {location_loss_avg:.4f}")
-    print(f"Epoch {epoch} - Layer Area Penalty = {area_penalty_avg:.4f}")
+    # print(f"Epoch {epoch} - Layer Area Penalty = {area_penalty_avg:.4f}")
     print(f"Epoch {epoch} - Global Area Penalty = {global_area_penalty_avg:.4f}")
     print(f"Epoch {epoch} - Wire Penalty = {wire_penalty_avg:.4f}")
     print(f"Epoch {epoch} - Cap Penalty = {cap_penalty_avg:.4f}")
@@ -376,11 +377,16 @@ if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     args = get_args()
     user_defined_name = 'test'
-    data_dirs = ['data/training_data/jpeg_train/', 'data/training_data/ariane133_train/', 'data/training_data/ibex/']
+    data_dirs = ['data/training_data/jpeg_train/', 'data/training_data/ibex/']
+    # 'data/training_data/ariane133_train/', 
     buf_info_file = 'data/buf_data.csv'
-    model_save_path = 'results/model_dict/mlbuf_' + user_defined_name + '.pt'
+    model_save_path = 'results/model_dict/'
     plot_save_path = 'results/plot/'
     btree_save_path = 'results/btree_pred/'
+    os.makedirs(model_save_path, exist_ok=True)
+    os.makedirs(plot_save_path, exist_ok=True)
+    os.makedirs(btree_save_path, exist_ok=True)
+    model_save_name = model_save_path+'mlbuf_' + user_defined_name + '.pt'
     figure_name = 'mlbuf_loss_' + user_defined_name + '.png'
     btree_file_name = 'mlbuf_btree_' + user_defined_name + '.csv'
     loss_save_path = plot_save_path + 'mlbuf_loss_' + user_defined_name + '.csv'
@@ -477,7 +483,7 @@ if __name__ == "__main__":
         print("Test Result:", test_loss, "\tepoch=", epoch)
         if test_loss < best_loss:
             best_loss = test_loss
-            torch.save(model.state_dict(), model_save_path)
+            torch.save(model.state_dict(), model_save_name)
             print(f"New best loss {best_loss:.4f}, model saved.")
             patience_counter = 0
         else:
@@ -493,5 +499,5 @@ if __name__ == "__main__":
     plot_utils.plot_losses(epoch_losses, plot_save_path + figure_name)
 
     print("Start inference ...")
-    inference(model, model_save_path, test_dataloader, device, buf_info_df, buf_type_map, btree_save_path,
+    inference(model, model_save_name, test_dataloader, device, buf_info_df, buf_type_map, btree_save_path,
               btree_file_name)
