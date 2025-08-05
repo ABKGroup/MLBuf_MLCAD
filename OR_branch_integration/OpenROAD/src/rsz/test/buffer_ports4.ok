@@ -1,0 +1,21 @@
+[INFO ODB-0227] LEF file: Nangate45/Nangate45.lef, created 22 layers, 27 vias, 135 library cells
+[INFO ODB-0128] Design: hi_fanout
+[INFO ODB-0130]     Created 2 pins.
+[INFO ODB-0131]     Created 250 components and 2000 component-terminals.
+[INFO ODB-0132]     Created 2 special nets and 500 connections.
+[INFO ODB-0133]     Created 2 nets and 500 connections.
+[INFO RSZ-0027] Inserted 1 input buffers.
+max slew
+
+Pin                                    Limit    Slew   Slack
+------------------------------------------------------------
+input1/Z                                0.20    1.15   -0.95 (VIOLATED)
+
+[INFO RSZ-0058] Using max wire length 833um.
+[INFO RSZ-0039] Resized 1 instances.
+max slew
+
+Pin                                    Limit    Slew   Slack
+------------------------------------------------------------
+input1/Z                                0.20    0.02    0.17 (MET)
+

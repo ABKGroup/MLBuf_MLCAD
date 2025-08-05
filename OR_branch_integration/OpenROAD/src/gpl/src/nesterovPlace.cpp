@@ -1,0 +1,1014 @@
+///////////////////////////////////////////////////////////////////////////////
+// BSD 3-Clause License
+//
+// Copyright (c) 2018-2020, The Regents of the University of California
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+//
+// * Neither the name of the copyright holder nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+///////////////////////////////////////////////////////////////////////////////
+
+// Debug controls: npinit, updateGrad, np, updateNextIter
+
+#include "nesterovPlace.h"
+
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <vector>
+
+#include "graphics.h"
+#include "nesterovBase.h"
+#include "odb/db.h"
+#include "placerBase.h"
+#include "routeBase.h"
+#include "timingBase.h"
+#include "utl/Logger.h"
+#include <fstream> //YL MLBuf
+#include <chrono> //YL MLBuf
+
+namespace gpl {
+using utl::GPL;
+
+NesterovPlace::NesterovPlace() = default;
+
+NesterovPlace::NesterovPlace(const NesterovPlaceVars& npVars,
+                             const std::shared_ptr<PlacerBaseCommon>& pbc,
+                             const std::shared_ptr<NesterovBaseCommon>& nbc,
+                             std::vector<std::shared_ptr<PlacerBase>>& pbVec,
+                             std::vector<std::shared_ptr<NesterovBase>>& nbVec,
+                             std::shared_ptr<RouteBase> rb,
+                             std::shared_ptr<TimingBase> tb,
+                             utl::Logger* log)
+    : NesterovPlace()
+{
+  npVars_ = npVars;
+  pbc_ = pbc;
+  nbc_ = nbc;
+  pbVec_ = pbVec;
+  nbVec_ = nbVec;
+  rb_ = std::move(rb);
+  tb_ = std::move(tb);
+  log_ = log;
+
+  db_cbk_ = std::make_unique<nesterovDbCbk>(this);
+  nbc_->setCbk(db_cbk_.get());
+  if (npVars_.timingDrivenMode) {
+    db_cbk_->addOwner(pbc_->db()->getChip()->getBlock());
+  }
+
+  if (npVars.debug && Graphics::guiActive()) {
+    graphics_ = std::make_unique<Graphics>(log_,
+                                           this,
+                                           pbc,
+                                           nbc,
+                                           pbVec,
+                                           nbVec,
+                                           npVars_.debug_draw_bins,
+                                           npVars.debug_inst,
+                                           npVars.debug_start_iter);
+  }
+  init();
+}
+
+NesterovPlace::~NesterovPlace()
+{
+  reset();
+}
+
+void NesterovPlace::updatePrevGradient(const std::shared_ptr<NesterovBase>& nb)
+{
+  nb->updatePrevGradient(wireLengthCoefX_, wireLengthCoefY_);
+  auto wireLengthGradSum_ = nb->getWireLengthGradSum();
+  auto densityGradSum_ = nb->getDensityGradSum();
+
+  if (wireLengthGradSum_ == 0
+      && recursionCntWlCoef_ < gpl::NesterovPlaceVars::maxRecursionWlCoef) {
+    wireLengthCoefX_ *= 0.5;
+    wireLengthCoefY_ *= 0.5;
+    baseWireLengthCoef_ *= 0.5;
+    debugPrint(
+        log_,
+        GPL,
+        "updateGrad",
+        1,
+        "sum(WL gradient) = 0 detected, trying again with wlCoef: {:g} {:g}",
+        wireLengthCoefX_,
+        wireLengthCoefY_);
+
+    // update WL forces
+    nbc_->updateWireLengthForceWA(wireLengthCoefX_, wireLengthCoefY_);
+
+    // recursive call again with smaller wirelength coef
+    recursionCntWlCoef_++;
+    updatePrevGradient(nb);
+    return;
+  }
+
+  // divergence detection on
+  // Wirelength / density gradient calculation
+  if (std::isnan(wireLengthGradSum_) || std::isinf(wireLengthGradSum_)
+      || std::isnan(densityGradSum_) || std::isinf(densityGradSum_)) {
+    isDiverged_ = true;
+    divergeMsg_ = "RePlAce diverged at wire/density gradient Sum.";
+    divergeCode_ = 306;
+  }
+}
+
+void NesterovPlace::updateCurGradient(const std::shared_ptr<NesterovBase>& nb)
+{
+  nb->updateCurGradient(wireLengthCoefX_, wireLengthCoefY_);
+  auto wireLengthGradSum_ = nb->getWireLengthGradSum();
+  auto densityGradSum_ = nb->getDensityGradSum();
+
+  if (wireLengthGradSum_ == 0
+      && recursionCntWlCoef_ < gpl::NesterovPlaceVars::maxRecursionWlCoef) {
+    wireLengthCoefX_ *= 0.5;
+    wireLengthCoefY_ *= 0.5;
+    baseWireLengthCoef_ *= 0.5;
+    debugPrint(
+        log_,
+        GPL,
+        "updateGrad",
+        1,
+        "sum(WL gradient) = 0 detected, trying again with wlCoef: {:g} {:g}",
+        wireLengthCoefX_,
+        wireLengthCoefY_);
+
+    // update WL forces
+    nbc_->updateWireLengthForceWA(wireLengthCoefX_, wireLengthCoefY_);
+
+    // recursive call again with smaller wirelength coef
+    recursionCntWlCoef_++;
+    updateCurGradient(nb);
+    return;
+  }
+
+  // divergence detection on
+  // Wirelength / density gradient calculation
+  if (std::isnan(wireLengthGradSum_) || std::isinf(wireLengthGradSum_)
+      || std::isnan(densityGradSum_) || std::isinf(densityGradSum_)) {
+    isDiverged_ = true;
+    divergeMsg_ = "RePlAce diverged at wire/density gradient Sum.";
+    divergeCode_ = 306;
+  }
+}
+
+void NesterovPlace::updateNextGradient(const std::shared_ptr<NesterovBase>& nb)
+{
+  nb->updateNextGradient(wireLengthCoefX_, wireLengthCoefY_);
+
+  auto wireLengthGradSum_ = nb->getWireLengthGradSum();
+  auto densityGradSum_ = nb->getDensityGradSum();
+
+  if (wireLengthGradSum_ == 0
+      && recursionCntWlCoef_ < gpl::NesterovPlaceVars::maxRecursionWlCoef) {
+    wireLengthCoefX_ *= 0.5;
+    wireLengthCoefY_ *= 0.5;
+    baseWireLengthCoef_ *= 0.5;
+    debugPrint(
+        log_,
+        GPL,
+        "updateGrad",
+        1,
+        "sum(WL gradient) = 0 detected, trying again with wlCoef: {:g} {:g}",
+        wireLengthCoefX_,
+        wireLengthCoefY_);
+
+    // update WL forces
+    nbc_->updateWireLengthForceWA(wireLengthCoefX_, wireLengthCoefY_);
+
+    // recursive call again with smaller wirelength coef
+    recursionCntWlCoef_++;
+    updateNextGradient(nb);
+    return;
+  }
+
+  // divergence detection on
+  // Wirelength / density gradient calculation
+  if (std::isnan(wireLengthGradSum_) || std::isinf(wireLengthGradSum_)
+      || std::isnan(densityGradSum_) || std::isinf(densityGradSum_)) {
+    isDiverged_ = true;
+    divergeMsg_ = "RePlAce diverged at wire/density gradient Sum.";
+    divergeCode_ = 306;
+  }
+}
+
+void NesterovPlace::init()
+{
+  // foreach nesterovbase call init
+  total_sum_overflow_ = 0;
+  float totalBaseWireLengthCoeff = 0;
+  for (auto& nb : nbVec_) {
+    nb->setNpVars(&npVars_);
+    nb->initDensity1();
+    total_sum_overflow_ += nb->getSumOverflow();
+    totalBaseWireLengthCoeff += nb->getBaseWireLengthCoef();
+  }
+
+  average_overflow_ = total_sum_overflow_ / nbVec_.size();
+  baseWireLengthCoef_ = totalBaseWireLengthCoeff / nbVec_.size();
+  updateWireLengthCoef(average_overflow_);
+
+  nbc_->updateWireLengthForceWA(wireLengthCoefX_, wireLengthCoefY_);
+
+  for (auto& nb : nbVec_) {
+    // fill in curSLPSumGrads_, curSLPWireLengthGrads_, curSLPDensityGrads_
+    updateCurGradient(nb);
+
+    // approximately fill in
+    // prevSLPCoordi_ to calculate lc vars
+    nb->updateInitialPrevSLPCoordi();
+
+    // bin, FFT, wlen update with prevSLPCoordi.
+    nb->updateDensityCenterPrevSLP();
+    nb->updateDensityForceBin();
+  }
+
+  nbc_->updateWireLengthForceWA(wireLengthCoefX_, wireLengthCoefY_);
+
+  for (auto& nb : nbVec_) {
+    // update previSumGrads_, prevSLPWireLengthGrads_, prevSLPDensityGrads_
+    updatePrevGradient(nb);
+  }
+
+  for (auto& nb : nbVec_) {
+    auto stepL = nb->initDensity2(wireLengthCoefX_, wireLengthCoefY_);
+    if ((std::isnan(stepL) || std::isinf(stepL))
+        && recursionCntInitSLPCoef_
+               < gpl::NesterovPlaceVars::maxRecursionInitSLPCoef) {
+      npVars_.initialPrevCoordiUpdateCoef *= 10;
+      debugPrint(log_,
+                 GPL,
+                 "npinit",
+                 1,
+                 "steplength = 0 detected. Rerunning Nesterov::init() "
+                 "with initPrevSLPCoef {:g}",
+                 npVars_.initialPrevCoordiUpdateCoef);
+      recursionCntInitSLPCoef_++;
+      init();
+      break;
+    }
+
+    if (std::isnan(stepL) || std::isinf(stepL)) {
+      log_->error(
+          GPL,
+          304,
+          "RePlAce diverged at initial iteration with steplength being {}. "
+          "Re-run with a smaller init_density_penalty value.",
+          stepL);
+    }
+  }
+}
+
+// clear reset
+void NesterovPlace::reset()
+{
+  npVars_.reset();
+  log_ = nullptr;
+
+  densityPenaltyStor_.clear();
+
+  densityPenaltyStor_.shrink_to_fit();
+
+  baseWireLengthCoef_ = 0;
+  wireLengthCoefX_ = wireLengthCoefY_ = 0;
+  prevHpwl_ = 0;
+  isDiverged_ = false;
+  isRoutabilityNeed_ = true;
+
+  divergeMsg_ = "";
+  divergeCode_ = 0;
+
+  recursionCntWlCoef_ = 0;
+  recursionCntInitSLPCoef_ = 0;
+}
+
+int NesterovPlace::doNesterovPlace(int start_iter)
+{
+  // if replace diverged in init() function,
+  // replace must be skipped.
+  if (isDiverged_) {
+    log_->error(GPL, divergeCode_, divergeMsg_);
+    return 0;
+  }
+
+  if (graphics_ && npVars_.debug_start_iter == 0) {
+    graphics_->cellPlot(true);
+  }
+
+  // routability snapshot info
+  bool is_routability_snapshot_saved = false;
+  float route_snapshotA = 0;
+  float route_snapshot_WlCoefX = 0, route_snapshot_WlCoefY = 0;
+  bool isDivergeTriedRevert = false;
+
+  // divergence snapshot info
+  float diverge_snapshot_WlCoefX = 0, diverge_snapshot_WlCoefY = 0;
+
+  // backTracking variable.
+  float curA = 1.0;
+
+  for (auto& nb : nbVec_) {
+    nb->setIter(start_iter);
+    nb->setMaxPhiCoefChanged(false);
+    nb->resetMinSumOverflow();
+  }
+
+  // Core Nesterov Loop
+  int iter = start_iter;
+  for (; iter < npVars_.maxNesterovIter; iter++) {
+    float prevA = curA;
+
+    // here, prevA is a_(k), curA is a_(k+1)
+    // See, the ePlace-MS paper's Algorithm 1
+    curA = (1.0 + sqrt(4.0 * prevA * prevA + 1.0)) * 0.5;
+
+    // coeff is (a_k - 1) / ( a_(k+1) ) in paper.
+    float coeff = (prevA - 1.0) / curA;
+
+    // Back-Tracking loop
+    int numBackTrak = 0;
+    for (numBackTrak = 0; numBackTrak < npVars_.maxBackTrack; numBackTrak++) {
+      // fill in nextCoordinates with given stepLength_
+      for (auto& nb : nbVec_) {
+        nb->nesterovUpdateCoordinates(coeff);
+      }
+
+      nbc_->updateWireLengthForceWA(wireLengthCoefX_, wireLengthCoefY_);
+
+      int numDiverge = 0;
+      for (auto& nb : nbVec_) {
+        updateNextGradient(nb);
+        numDiverge += nb->isDiverged();
+      }
+
+      // NaN or inf is detected in WireLength/Density Coef
+      if (numDiverge > 0 || isDiverged_) {
+        isDiverged_ = true;
+        divergeMsg_ = "RePlAce diverged at wire/density gradient Sum.";
+        divergeCode_ = 306;
+        break;
+      }
+
+      int stepLengthLimitOK = 0;
+      numDiverge = 0;
+      for (auto& nb : nbVec_) {
+        stepLengthLimitOK += nb->nesterovUpdateStepLength();
+        numDiverge += nb->isDiverged();
+      }
+
+      if (numDiverge > 0) {
+        isDiverged_ = true;
+        divergeMsg_ = "RePlAce diverged at newStepLength.";
+        divergeCode_ = 305;
+        break;
+      }
+
+      if (stepLengthLimitOK != nbVec_.size()) {
+        break;
+      }
+    }
+
+    debugPrint(log_, GPL, "np", 1, "NumBackTrak: {}", numBackTrak + 1);
+
+    // Adjust Phi dynamically for larger designs
+    for (auto& nb : nbVec_) {
+      nb->nesterovAdjustPhi();
+    }
+
+    if (npVars_.maxBackTrack == numBackTrak) {
+      debugPrint(log_,
+                 GPL,
+                 "np",
+                 1,
+                 "Backtracking limit reached so a small step will be taken");
+    }
+
+    if (isDiverged_) {
+      break;
+    }
+
+    updateNextIter(iter);
+
+    if (!npVars_.disableRevertIfDiverge) {
+      if (is_min_hpwl_) {
+        diverge_snapshot_WlCoefX = wireLengthCoefX_;
+        diverge_snapshot_WlCoefY = wireLengthCoefY_;
+        for (auto& nb : nbVec_) {
+          nb->snapshot();
+        }
+      }
+    }
+
+    // For JPEG Saving
+    // debug
+    const int debug_start_iter = npVars_.debug_start_iter;
+    if (graphics_ && (debug_start_iter == 0 || iter + 1 >= debug_start_iter)) {
+      bool update
+          = (iter == 0 || (iter + 1) % npVars_.debug_update_iterations == 0);
+      if (update) {
+        bool pause
+            = (iter == 0 || (iter + 1) % npVars_.debug_pause_iterations == 0);
+        graphics_->cellPlot(pause);
+      }
+    }
+
+    // timing driven feature
+    // if virtual, do reweight on timing-critical nets,
+    // otherwise keep all modifications by rsz.
+    if (npVars_.timingDrivenMode
+        && tb_->isTimingNetWeightOverflow(average_overflow_)) {
+      // update db's instance location from current density coordinates
+      updateDb();
+
+      // Call resizer's estimateRC API to fill in PEX using placed locations,
+      // Call sta's API to extract worst timing paths,
+      // and update GNet's weights from worst timing paths.
+      //
+      // See timingBase.cpp in detail
+      bool virtual_td_iter
+          = (average_overflow_ > npVars_.keepResizeBelowOverflow);
+
+      log_->info(GPL,
+                 100,
+                 "Timing-driven iteration {}/{}, virtual: {}.",
+                 ++npVars_.timingDrivenIterCounter,
+                 tb_->getTimingNetWeightOverflowSize(),
+                 virtual_td_iter);
+
+      log_->info(GPL,
+                 101,
+                 "Iter: {}, overflow: {:.3f}, keep rsz at: {}",
+                 iter,
+                 average_overflow_,
+                 npVars_.keepResizeBelowOverflow);
+
+      if (!virtual_td_iter) {
+        db_cbk_->addOwner(pbc_->db()->getChip()->getBlock());
+      } else {
+        db_cbk_->removeOwner();
+      }
+
+      auto block = pbc_->db()->getChip()->getBlock();
+      // -----------------------------------------------------
+      // update since 2025/04/13 MLBuf integration
+      bool shouldTdProceed = true; 
+      bool mlbuf_integration_flag = true;
+      log_->report("[INFO] mlbuf_integration_flag = {}", mlbuf_integration_flag);
+      if (mlbuf_integration_flag) {
+        log_->report("[INFO] MLBuf intergration Starts ....");  
+        // Do not update net weights in MLBuf mode, only consider the buffer area effect
+        bool shouldTdProceed = tb_->updateGNetWeights_update(virtual_td_iter); 
+      }
+      else {
+        bool shouldTdProceed = tb_->updateGNetWeights(virtual_td_iter); 
+      }
+
+      if (mlbuf_integration_flag && virtual_td_iter) {
+        // Call MLBuf / hacky baseline here to process all problematic nets
+        std::string buf_approach = std::getenv("BUF_APPROACH");
+        const std::string default_approach = "rsz";
+        std::string buffer_approach = (buf_approach.size() != 0) ? std::string(buf_approach) : default_approach;
+        std::cout << "Buffer approach: " << buffer_approach << std::endl;
+        if (buffer_approach == std::string("MLBuf")) {
+          std::string model_pt = std::getenv("MODEL");
+          std::cout << "[INFO] model_pt = " << model_pt << std::endl;
+          std::string prob_net = std::getenv("INPUT"); // save all problematic nets
+          std::cout << "[INFO] prob_net = " << prob_net << std::endl;
+          std::string output_file = std::getenv("OUTPUT");
+          std::cout << "[INFO] output_file = " << output_file << std::endl;
+          std::string mlbuf_time_file = std::getenv("TIMEMLBuf");
+          std::cout << "[INFO] mlbuf_time_file = " << mlbuf_time_file << std::endl;
+          std::string env_cluster = std::getenv("CLUSTERNUM");
+          std::cout << "[INFO] env_cluster = " << env_cluster << std::endl;
+          
+          log_->report("[INFO] MLBuf is used");
+          std::string cmd = "/home/tool/anaconda3/envs/zhiang/bin/python /home/dgx_projects/MLBuf/virtual_buffer/MLBuf/mlbuf_infer.py "; 
+          cmd += "--model "+ model_pt + " "; 
+          cmd += "--input "+ prob_net + " "; 
+          cmd += "--output "+ output_file + " ";
+          cmd += "--timeMLBuf " + mlbuf_time_file + " ";
+          cmd += "--clusterNum " + env_cluster + " ";
+          cmd += "--cudaID " + std::string(std::getenv("CUDAID")) + " ";
+
+          std::cout << "[INFO] cmd = " << cmd << std::endl;
+          int ret = std::system(cmd.c_str());
+          if (ret != 0) {
+            log_->report("mlbuf_infer.py failed with code {}", ret);
+          } 
+        } else if (buffer_approach == std::string("Hack-y")) {
+            log_->report("[INFO] Hack-y baseline is used");
+            const std::string prob_net = std::getenv("INPUT"); // save all problematic nets
+            std::string output_file = std::getenv("OUTPUT");
+            std::string cmd = "/home/tool/anaconda3/envs/zhiang/bin/python /home/dgx_projects/MLBuf/virtual_buffer/MLBuf/integrate_OR/hacky_baseline.py "; 
+            cmd += "--input " + prob_net + " "; 
+            cmd += "--output " + output_file;
+            int ret = std::system(cmd.c_str());
+            if (ret != 0) {
+              log_->report("hacky_baseline.py failed with code {}", ret);
+              exit(1);
+            } 
+        }
+        else {
+          log_->report("[INFO] OR rsz is used");
+        }
+        
+        // Now we have a list of buffers with buffer location and buffer sizes
+        // (1) Read from user-specified CSV
+        std::string bufferCSV = std::getenv("OUTPUT");  
+        std::vector<BufferBox> bufferList;
+        if (!loadBufferBoxesFromCSV(bufferCSV, bufferList)) {
+          log_->report("[ERROR] Failed to read buffer boxes from ", bufferCSV.c_str()); 
+          // exit(1);
+
+        } else {
+          log_->report("[INFO] Successfully loaded " + std::to_string(bufferList.size()) + " buffers from CSV");
+        }
+        
+        // (2) Compute total area 
+        float buf_total_area = computeTotalBufferArea(bufferList);
+        log_->report("[INFO] Sum of all buffers' area = " + std::to_string(buf_total_area));
+        // exit(0);
+
+        // (3) Integration manner: bin 
+        const std::string default_manner = "bin";  
+        const char* mlbuf_integration = std::getenv("INTEGRATION_MANNER");
+        std::string mlbuf_integration_manner = (mlbuf_integration != nullptr) ? std::string(mlbuf_integration) : default_manner;
+        if (mlbuf_integration_manner == "bin") {
+          log_->report("[INFO] Integration manner: reduce bin capacity");
+            for (auto& nesterov : nbVec_) {
+              nesterov->setTargetDensity(
+                static_cast<float>(buf_total_area
+                                  + nesterov->nesterovInstsArea()
+                                  + nesterov->totalFillerArea())
+                / static_cast<float>(nesterov->whiteSpaceArea()));
+              nesterov->updateDensityCenterCurSLP_update(mlbuf_integration_flag, bufferList); 
+              nesterov->updateDensityForceBin(); 
+              // nbc_->resetDeltaArea();
+              // nesterov->updateAreas();
+              // nesterov->updateDensitySize();
+            }
+        } 
+        // else if (mlbuf_integration_manner == "cell") {
+        //   log_->report("[INFO] Integration manner: cell inflation");
+        //     for (auto& nesterov : nbVec_) {
+        //       // for each cell, calculate overlap(cell, buf), calculate inflation ratio, inflate cell
+        //       nesterov->cellInflationForMLBuf(bufferList);
+        //       nesterov->updateAreas();
+        //       nesterov->updateDensitySize(); // Question: is there anything else I should do here?
+        //     }
+        // } 
+        else {
+          log_->report("[ERROR] Invalid integration manner: %s", mlbuf_integration_manner.c_str());
+          log_->report("[ERROR] Please set the environment variable 'Integration Manner' to 'bin' or 'cell'");
+          // exit(1);
+        }
+        // clean
+        std::ofstream ofs(bufferCSV, std::ios::trunc);
+        if (!ofs) {
+            std::cerr << "Failed to open bufferCSV.\n";
+            return 1;
+        }
+        std::cout << "File contents (bufferCSV, predicted buffers) cleared successfully.\n";
+        ofs.close();
+    
+        log_->report("[INFO] MLBuf intergration Ends ....");
+      }
+      
+      // -----------------------------------------------------
+
+      // bool shouldTdProceed = tb_->updateGNetWeights(virtual_td_iter);
+      auto netlistModifySt = std::chrono::high_resolution_clock::now();
+      if (!virtual_td_iter) {
+        for (auto& nesterov : nbVec_) {
+          nesterov->updateGCellState(wireLengthCoefX_, wireLengthCoefY_);
+          // updates order in routability:
+          // 1. change areas
+          // 2. set target density with delta area
+          // 3. updateareas
+          // 4. updateDensitySize
+
+          nesterov->setTargetDensity(
+              static_cast<float>(nbc_->getDeltaArea()
+                                 + nesterov->nesterovInstsArea()
+                                 + nesterov->totalFillerArea())
+              / static_cast<float>(nesterov->whiteSpaceArea()));
+
+          float rsz_delta_area_microns
+              = block->dbuAreaToMicrons(nbc_->getDeltaArea());
+          float rsz_delta_area_percentage
+              = (nbc_->getDeltaArea()
+                 / static_cast<float>(nesterov->nesterovInstsArea()))
+                * 100.0f;
+          log_->info(
+              GPL,
+              107,
+              "Timing-driven: repair_design delta area: {:.3f} um^2 ({:+.2f}%)",
+              rsz_delta_area_microns,
+              rsz_delta_area_percentage);
+          log_->info(GPL,
+                     108,
+                     "Timing-driven: new target density: {}",
+                     nesterov->targetDensity());
+          nbc_->resetDeltaArea();
+          nesterov->updateAreas();
+          nesterov->updateDensitySize();
+        }
+      }
+
+      // problem occured
+      // escape timing driven later
+      if (!shouldTdProceed) {
+        npVars_.timingDrivenMode = false;
+      }
+      auto netlistModifyEt = std::chrono::high_resolution_clock::now();
+      // ---------- YL MLBuf, just for test ---------
+      auto netlistModifyDuration = std::chrono::duration_cast<std::chrono::milliseconds>(netlistModifyEt - netlistModifySt);
+      // Open the file in append mode
+      // std::string runtime_file = std::getenv("TIMERSZ");
+      // std::ofstream file(runtime_file, std::ios::app);
+
+      // if (file.is_open()) {
+      //     file << netlistModifyDuration.count() << std::endl; // Append the number and a newline
+      //     file.close();
+      //     std::cout << "netlistModifyDuration appended to file successfully." << std::endl;
+      // } else {
+      //     std::cerr << "Unable to open recordORTime.txt" << std::endl;
+      //     return 1; // error code
+      // }
+      // exit(0); // YL MLBuf, just for test
+
+    }
+    
+
+    // diverge detection on
+    // large max_phi_cof value + large design
+    //
+    // 1) happen overflow < 20%
+    // 2) Hpwl is growing
+
+    int numDiverge = 0;
+    for (auto& nb : nbVec_) {
+      numDiverge += nb->checkDivergence();
+    }
+
+    if (numDiverge > 0) {
+      divergeMsg_ = "RePlAce divergence detected. ";
+      divergeMsg_ += "Re-run with a smaller max_phi_cof value.";
+      divergeCode_ = 307;
+      isDiverged_ = true;
+
+      // revert back to the original rb solutions
+      // one more opportunity
+      if (!isDivergeTriedRevert && rb_->numCall() >= 1) {
+        // get back to the working rc size
+        rb_->revertGCellSizeToMinRc();
+        curA = route_snapshotA;
+        wireLengthCoefX_ = route_snapshot_WlCoefX;
+        wireLengthCoefY_ = route_snapshot_WlCoefY;
+        nbc_->updateWireLengthForceWA(wireLengthCoefX_, wireLengthCoefY_);
+        for (auto& nb : nbVec_) {
+          nb->revertDivergence();
+        }
+
+        isDiverged_ = false;
+        divergeCode_ = 0;
+        divergeMsg_ = "";
+        isDivergeTriedRevert = true;
+        // turn off the RD forcely
+        isRoutabilityNeed_ = false;
+      } else if (!npVars_.disableRevertIfDiverge) {
+        // In case diverged and not in routability mode, finish with min hpwl
+        // stored since overflow below 0.25
+        log_->warn(GPL,
+                   90,
+                   "Divergence detected, reverting to snapshot with min hpwl.");
+        log_->warn(GPL,
+                   91,
+                   "Revert to iter: {:4d} overflow: {:.3f} HPWL: {}",
+                   diverge_snapshot_iter_,
+                   diverge_snapshot_average_overflow_unscaled_,
+                   min_hpwl_);
+        wireLengthCoefX_ = diverge_snapshot_WlCoefX;
+        wireLengthCoefY_ = diverge_snapshot_WlCoefY;
+        nbc_->updateWireLengthForceWA(wireLengthCoefX_, wireLengthCoefY_);
+        for (auto& nb : nbVec_) {
+          nb->revertDivergence();
+        }
+        isDiverged_ = false;
+        break;
+      } else {
+        break;
+      }
+    }
+
+    if (!is_routability_snapshot_saved && npVars_.routabilityDrivenMode
+        && 0.6 >= average_overflow_unscaled_) {
+      route_snapshot_WlCoefX = wireLengthCoefX_;
+      route_snapshot_WlCoefY = wireLengthCoefY_;
+      route_snapshotA = curA;
+      is_routability_snapshot_saved = true;
+
+      for (auto& nb : nbVec_) {
+        nb->snapshot();
+      }
+
+      log_->info(GPL, 88, "Routability snapshot saved at iter = {}", iter);
+    }
+
+    // check routability using RUDY or GR
+    if (npVars_.routabilityDrivenMode && isRoutabilityNeed_
+        && npVars_.routabilityCheckOverflow >= average_overflow_unscaled_) {
+      // recover the densityPenalty values
+      // if further routability-driven is needed
+      std::pair<bool, bool> result = rb_->routability();
+      isRoutabilityNeed_ = result.first;
+      bool isRevertInitNeeded = result.second;
+
+      // if routability is needed
+      if (isRoutabilityNeed_ || isRevertInitNeeded) {
+        // cutFillerCoordinates();
+
+        // revert back the current density penality
+        curA = route_snapshotA;
+        wireLengthCoefX_ = route_snapshot_WlCoefX;
+        wireLengthCoefY_ = route_snapshot_WlCoefY;
+
+        nbc_->updateWireLengthForceWA(wireLengthCoefX_, wireLengthCoefY_);
+
+        for (auto& nb : nbVec_) {
+          nb->revertDivergence();
+          nb->resetMinSumOverflow();
+        }
+        log_->info(GPL, 89, "Routability: revert back to snapshot");
+      }
+    }
+
+    // check each for converge and if all are converged then stop
+    int numConverge = 0;
+    for (auto& nb : nbVec_) {
+      numConverge += nb->checkConvergence();
+    }
+
+    if (numConverge == nbVec_.size()) {
+      // log_->report("[NesterovSolve] Finished, all regions converged");
+      break;
+    }
+  }
+  // in all case including diverge,
+  // db should be updated.
+  updateDb();
+
+  if (isDiverged_) {
+    log_->error(GPL, divergeCode_, divergeMsg_);
+  }
+
+  if (graphics_) {
+    graphics_->status("End placement");
+    graphics_->cellPlot(true);
+  }
+
+  if (db_cbk_ != nullptr) {
+    db_cbk_->removeOwner();
+  }
+  return iter;
+}
+
+void NesterovPlace::updateWireLengthCoef(float overflow)
+{
+  if (overflow > 1.0) {
+    wireLengthCoefX_ = wireLengthCoefY_ = 0.1;
+  } else if (overflow < 0.1) {
+    wireLengthCoefX_ = wireLengthCoefY_ = 10.0;
+  } else {
+    wireLengthCoefX_ = wireLengthCoefY_
+        = 1.0 / pow(10.0, (overflow - 0.1) * 20 / 9.0 - 1.0);
+  }
+
+  wireLengthCoefX_ *= baseWireLengthCoef_;
+  wireLengthCoefY_ *= baseWireLengthCoef_;
+  debugPrint(log_, GPL, "np", 1, "NewWireLengthCoef: {:g}", wireLengthCoefX_);
+}
+
+void NesterovPlace::updateNextIter(const int iter)
+{
+  total_sum_overflow_ = 0;
+  total_sum_overflow_unscaled_ = 0;
+
+  for (auto& nb : nbVec_) {
+    nb->updateNextIter(iter);
+    total_sum_overflow_ += nb->getSumOverflow();
+    total_sum_overflow_unscaled_ += nb->getSumOverflowUnscaled();
+  }
+
+  average_overflow_ = total_sum_overflow_ / nbVec_.size();
+  average_overflow_unscaled_ = total_sum_overflow_unscaled_ / nbVec_.size();
+
+  // For coefficient, using average regions' overflow
+  updateWireLengthCoef(average_overflow_);
+
+  // Update divergence snapshot
+  if (!npVars_.disableRevertIfDiverge) {
+    int64_t hpwl = nbc_->getHpwl();
+    if (hpwl < min_hpwl_ && average_overflow_unscaled_ <= 0.25) {
+      min_hpwl_ = hpwl;
+      diverge_snapshot_average_overflow_unscaled_ = average_overflow_unscaled_;
+      diverge_snapshot_iter_ = iter;
+      is_min_hpwl_ = true;
+    } else {
+      is_min_hpwl_ = false;
+    }
+  }
+}
+
+void NesterovPlace::updateDb()
+{
+  nbc_->updateDbGCells();
+}
+
+nesterovDbCbk::nesterovDbCbk(NesterovPlace* nesterov_place)
+    : nesterov_place_(nesterov_place)
+{
+}
+
+void NesterovPlace::createGCell(odb::dbInst* db_inst)
+{
+  auto gcell_index = nbc_->createGCell(db_inst);
+  for (auto& nesterov : nbVec_) {
+    // TODO: manage regions, not every NB should create a
+    // gcell.
+    nesterov->createGCell(db_inst, gcell_index, rb_.get());
+  }
+}
+
+void NesterovPlace::destroyGCell(odb::dbInst* db_inst)
+{
+  for (auto& nesterov : nbVec_) {
+    nesterov->destroyGCell(db_inst);
+  }
+}
+
+void NesterovPlace::createGNet(odb::dbNet* db_net)
+{
+  odb::dbSigType netType = db_net->getSigType();
+  if (!isValidSigType(netType)) {
+    log_->report("db_net:{} is not signal or clock: {}",
+                 db_net->getName(),
+                 db_net->getSigType().getString());
+    return;
+  }
+  nbc_->createGNet(db_net, pbc_->skipIoMode());
+}
+
+void NesterovPlace::destroyGNet(odb::dbNet* db_net)
+{
+  nbc_->destroyGNet(db_net);
+}
+
+void NesterovPlace::createITerm(odb::dbITerm* iterm)
+{
+  if (!isValidSigType(iterm->getSigType())) {
+    return;
+  }
+  nbc_->createITerm(iterm);
+}
+
+void NesterovPlace::destroyITerm(odb::dbITerm* iterm)
+{
+  if (!isValidSigType(iterm->getSigType())) {
+    log_->report("iterm:{} is not signal or clock: {}",
+                 iterm->getName('|'),
+                 iterm->getSigType().getString());
+    return;
+  }
+  nbc_->destroyITerm(iterm);
+}
+
+void NesterovPlace::resizeGCell(odb::dbInst* db_inst)
+{
+  nbc_->resizeGCell(db_inst);
+}
+
+void NesterovPlace::moveGCell(odb::dbInst* db_inst)
+{
+  nbc_->moveGCell(db_inst);
+}
+
+void nesterovDbCbk::inDbInstSwapMasterAfter(odb::dbInst* db_inst)
+{
+  nesterov_place_->resizeGCell(db_inst);
+}
+
+void nesterovDbCbk::inDbPostMoveInst(odb::dbInst* db_inst)
+{
+  nesterov_place_->moveGCell(db_inst);
+}
+
+void nesterovDbCbk::inDbInstCreate(odb::dbInst* db_inst)
+{
+  nesterov_place_->createGCell(db_inst);
+}
+
+// TODO: use the region to create new gcell.
+void nesterovDbCbk::inDbInstCreate(odb::dbInst* db_inst, odb::dbRegion* region)
+{
+}
+
+void nesterovDbCbk::inDbInstDestroy(odb::dbInst* db_inst)
+{
+  nesterov_place_->destroyGCell(db_inst);
+}
+
+void nesterovDbCbk::inDbITermCreate(odb::dbITerm* iterm)
+{
+  nesterov_place_->createITerm(iterm);
+}
+
+void nesterovDbCbk::inDbITermDestroy(odb::dbITerm* iterm)
+{
+  nesterov_place_->destroyITerm(iterm);
+}
+
+void nesterovDbCbk::inDbNetCreate(odb::dbNet* db_net)
+{
+  nesterov_place_->createGNet(db_net);
+}
+
+void nesterovDbCbk::inDbNetDestroy(odb::dbNet* db_net)
+{
+}
+
+// -----------------------------------------------------
+// New Functions for MLBuf 
+// -----------------------------------------------------
+float NesterovPlace::computeTotalBufferArea(const std::vector<BufferBox>& bufferList)
+{
+    double sumArea = 0.0;
+    for (const auto& buf : bufferList) {
+        sumArea += buf.area();  
+    }
+    return sumArea;
+}
+
+bool NesterovPlace::loadBufferBoxesFromCSV(const std::string& filename,
+  std::vector<BufferBox>& bufferList)
+{
+  std::ifstream fin(filename);
+  if (!fin.is_open()) {
+    std::cerr << "Error: cannot open file " << filename << "\n";
+    return false;
+  }
+
+  bufferList.clear();
+
+  std::string line;
+
+  while (std::getline(fin, line)) {
+  if (line.empty()) continue;
+  std::stringstream ss(line);
+  float lx, ly, ux, uy, area;
+
+  char comma; // to skip commas
+  // read five values
+  if (!(ss >> lx >> comma >> ly >> comma >> ux >> comma >> uy >> comma >> area)) {
+  std::cerr << "Warning: malformed CSV line: " << line << "\n";
+  continue;
+  }
+
+  bufferList.emplace_back(static_cast<float>(lx),
+                        static_cast<float>(ly),
+                        static_cast<float>(ux),
+                        static_cast<float>(uy),
+                        static_cast<float>(area));
+  }
+
+  fin.close();
+  return true;
+}
+
+
+}  // namespace gpl
