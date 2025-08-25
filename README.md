@@ -70,3 +70,11 @@ scripts/OR_scripts/${DESIGN_NAME}/run_baseline_no_timing.sh
 ```bash
 scripts/OR_scripts/${DESIGN_NAME}/run_baseline_rsz_virtual.sh
 ```
+## Evaluation
+
+### Evaluation of predicted buffer-embedded tree
+To evaluate the quality of predicted buffer-embedded trees (see Table III and Table VIII of the paper),
+please refer to the OpenROAD-flow-scripts branch:
+
+[Evaluation Flow (erc-dev branch)](https://github.com/ytliu8464/OpenROAD-flow-scripts/tree/erc-dev/flow) 
+
