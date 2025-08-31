@@ -1,0 +1,365 @@
+{
+    "classes_dir": "schema",
+    "iterators":[
+    {
+        "name": "dbModulePortItr",
+        "parentObject": "dbModBTerm",
+        "tableName": "modbterm_tbl",
+        "reversible": "true",
+	"orderReversed": "true",
+        "flags":["private"],	
+        "sequential": 0,
+        "includes": ["dbModBTerm.h", "dbModule.h", "dbBusPort.h", "dbBlock.h"]
+    },
+    {
+        "name": "dbModuleModBTermItr",
+        "parentObject": "dbModBTerm",
+        "tableName": "modbterm_tbl",
+        "reversible": "true",
+	"orderReversed": "true",
+        "flags":["private"],	
+        "sequential": 0,
+        "includes": ["dbModBTerm.h", "dbModule.h", "dbBusPort.h"]
+    },
+    {
+      "name": "dbModuleInstItr",
+      "parentObject": "dbInst",
+      "tableName": "inst_tbl",
+      "reversible": "true",
+      "orderReversed": "true",
+      "sequential": 0,
+      "includes": ["dbModule.h"]
+    },
+    {
+      "name": "dbModuleModInstItr",
+      "parentObject": "dbModInst",
+      "tableName": "modinst_tbl",
+      "reversible": "true",
+      "orderReversed": "true",
+        "sequential": 0,
+        "includes": ["dbModInst.h", "dbModule.h"]
+    },
+    {
+        "name": "dbModuleBusPortModBTermItr",
+        "parentObject": "dbModBTerm",
+        "tableName": "modbterm_tbl",
+        "reversible": "true",
+	"orderReversed": "true",
+        "flags":["private"],	
+        "sequential": 0,
+	"includes": ["dbModBTerm.h", "dbModule.h", "dbBusPort.h"]
+    },
+    {
+        "name": "dbModuleModInstModITermItr",
+        "parentObject": "dbModITerm",
+        "tableName": "moditerm_tbl",
+        "reversible": "true",
+        "orderReversed": "true",
+        "sequential": 0,
+	"includes": ["dbModITerm.h", "dbModule.h", "dbModInst.h"]
+    },
+    {
+      "name": "dbModuleModNetItr",
+      "parentObject": "dbModNet",
+      "tableName": "modnet_tbl",
+      "reversible": "true",
+      "orderReversed": "true",
+      "sequential": 0,
+	"includes": ["dbModNet.h","dbModule.h"]
+    },
+    {
+      "name": "dbModuleModNetModITermItr",
+      "parentObject": "dbModITerm",
+      "tableName": "moditerm_tbl",
+      "reversible": "true",
+      "orderReversed": "true",
+      "sequential": 0,
+	"includes": ["dbModNet.h","dbModule.h"]
+    },
+    {
+      "name": "dbModuleModNetModBTermItr",
+      "parentObject": "dbModBTerm",
+      "tableName": "modbterm_tbl",
+      "reversible": "true",
+      "orderReversed": "true",
+      "sequential": 0,
+	"includes": ["dbModNet.h","dbModule.h"]
+    },
+    {
+      "name": "dbModuleModNetBTermItr",
+      "parentObject": "dbBTerm",
+      "tableName": "bterm_tbl",
+      "reversible": "true",
+      "orderReversed": "true",
+      "sequential": 0,
+	"includes": ["dbModNet.h", "dbModule.h"]
+    },
+    {
+      "name": "dbModuleModNetITermItr",
+      "parentObject": "dbITerm",
+      "tableName": "iterm_tbl",
+      "reversible": "true",
+      "orderReversed": "true",
+      "sequential": 0,
+	"includes": ["dbModNet.h", "dbModule.h"]
+    },
+    {
+      "name": "dbGroupModInstItr",
+      "parentObject": "dbModInst",
+      "tableName": "modinst_tbl",
+      "reversible": "true",
+      "orderReversed": "true",
+      "sequential": 0,
+      "includes": ["dbGroup.h"]
+    },
+    {
+      "name": "dbGroupItr",
+      "parentObject": "dbGroup",
+      "tableName": "group_tbl",
+      "reversible": "true",
+      "orderReversed": "true",
+      "sequential": 0
+    },
+    {
+      "name": "dbRegionGroupItr",
+      "parentObject": "dbGroup",
+      "tableName": "group_tbl",
+      "reversible": "true",
+      "orderReversed": "true",
+      "sequential": 0
+    },
+    {
+      "name": "dbGroupInstItr",
+      "parentObject": "dbInst",
+      "tableName": "inst_tbl",
+      "reversible": "true",
+      "orderReversed": "true",
+      "sequential": 0,
+      "includes": ["dbGroup.h"]
+    },
+    {
+      "name": "dbGuideItr",
+      "parentObject": "dbGuide",
+      "tableName": "guide_tbl",
+      "reversible": "true",
+      "orderReversed": "true",
+      "sequential": 0
+    },
+    {
+      "name": "dbNetTrackItr",
+      "parentObject": "dbNetTrack",
+      "tableName": "net_tracks_tbl",
+      "reversible": "true",
+      "orderReversed": "true",
+      "sequential": 0
+    }
+  ],
+  "relations":[
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerCutClassRule",
+      "type":"1_n",
+      "tbl_name":"cut_class_rules_tbl_",
+      "hash":true
+    },
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerSpacingEolRule",
+      "type":"1_n",
+      "tbl_name":"spacing_eol_rules_tbl_"
+    },
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerCutSpacingRule",
+      "type":"1_n",
+      "tbl_name":"cut_spacing_rules_tbl_"
+    },
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerMinStepRule",
+      "type":"1_n",
+      "tbl_name":"minstep_rules_tbl_"
+    },
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerCornerSpacingRule",
+      "type":"1_n",
+      "tbl_name":"corner_spacing_rules_tbl_"
+    },
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerSpacingTablePrlRule",
+      "type":"1_n",
+      "tbl_name":"spacing_table_prl_rules_tbl_"
+    },
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerCutSpacingTableOrthRule",
+      "type":"1_n",
+      "tbl_name":"cut_spacing_table_orth_tbl_"
+    },
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerCutSpacingTableDefRule",
+      "type":"1_n",
+      "tbl_name":"cut_spacing_table_def_tbl_"
+    },
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerCutEnclosureRule",
+      "type":"1_n",
+      "tbl_name":"cut_enc_rules_tbl_"
+    },
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerEolExtensionRule",
+      "type":"1_n",
+      "tbl_name":"eol_ext_rules_tbl_"
+    },
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerArraySpacingRule",
+      "type":"1_n",
+      "tbl_name":"array_spacing_rules_tbl_"
+    },
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerEolKeepOutRule",
+      "type":"1_n",
+      "tbl_name":"eol_keep_out_rules_tbl_"
+    },
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerMaxSpacingRule",
+      "type":"1_n",
+      "tbl_name":"max_spacing_rules_tbl_",
+      "schema":"db_schema_max_spacing"
+    },
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerWidthTableRule",
+      "type":"1_n",
+      "tbl_name":"width_table_rules_tbl_"
+    },
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerMinCutRule",
+      "type":"1_n",
+      "tbl_name":"min_cuts_rules_tbl_"
+    },
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerAreaRule",
+      "type":"1_n",
+      "tbl_name":"area_rules_tbl_"
+    },
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerForbiddenSpacingRule",
+      "type":"1_n",
+      "tbl_name":"forbidden_spacing_rules_tbl_",
+      "schema":"db_schema_lef58_forbidden_spacing"
+    },
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerKeepOutZoneRule",
+      "type":"1_n",
+      "tbl_name":"keepout_zone_rules_tbl_",
+      "schema":"db_schema_keepout_zone"
+    },
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerWrongDirSpacingRule",
+      "type":"1_n",
+      "tbl_name":"wrongdir_spacing_rules_tbl_",
+      "schema":"db_schema_wrongdir_spacing"
+    },
+    {
+      "first":"dbTechLayer",
+      "second":"dbTechLayerTwoWiresForbiddenSpcRule",
+      "type":"1_n",
+      "tbl_name":"two_wires_forbidden_spc_rules_tbl_",
+      "schema":"db_schema_lef58_two_wires_forbidden_spacing"
+    },
+    {
+      "first": "dbDft",
+      "second": "dbScanPin",
+      "type": "1_n",
+      "tbl_name": "scan_pins_",
+      "flags": ["no-get"]
+    },
+    {
+      "first": "dbScanChain",
+      "second": "dbScanPartition",
+      "type": "1_n",
+      "tbl_name": "scan_partitions_"
+    },
+    {
+      "first": "dbScanPartition",
+      "second": "dbScanList",
+      "type": "1_n",
+      "tbl_name": "scan_lists_"
+    },
+    {
+      "first": "dbScanList",
+      "second": "dbScanInst",
+      "type": "1_n",
+      "tbl_name": "scan_insts_"
+    },
+    {
+      "first": "dbDft",
+      "second": "dbScanChain",
+      "type": "1_n",
+      "tbl_name": "scan_chains_"
+    },
+    {
+      "first": "dbGDSStructure",
+      "second": "dbGDSBoundary",
+      "type": "1_n",
+      "tbl_name": "boundaries_"
+    },
+    {
+      "first": "dbGDSStructure",
+      "second": "dbGDSBox",
+      "type": "1_n",
+      "tbl_name": "boxes_"
+    },
+    {
+      "first": "dbGDSStructure",
+      "second": "dbGDSPath",
+      "type": "1_n",
+      "tbl_name": "paths_"
+    },
+    {
+      "first": "dbGDSStructure",
+      "second": "dbGDSSRef",
+      "type": "1_n",
+      "tbl_name": "srefs_"
+    },
+    {
+      "first": "dbGDSStructure",
+      "second": "dbGDSARef",
+      "type": "1_n",
+      "tbl_name": "arefs_"
+    },
+    {
+      "first": "dbGDSStructure",
+      "second": "dbGDSText",
+      "type": "1_n",
+      "tbl_name": "texts_"
+    },
+    {
+      "first":"dbMarkerCategory",
+      "second":"dbMarker",
+      "type":"1_n",
+      "tbl_name":"marker_tbl_"
+    },
+    {
+      "first":"dbMarkerCategory",
+      "second":"dbMarkerCategory",
+      "type":"1_n",
+      "tbl_name":"categories_tbl_",
+      "hash":true
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+[INFO ODB-0227] LEF file: Nangate45/Nangate45.lef, created 22 layers, 27 vias, 135 library cells
+[INFO ODB-0128] Design: long_wire
+[INFO ODB-0130]     Created 3 pins.
+[INFO ODB-0131]     Created 4 components and 16 component-terminals.
+[INFO ODB-0132]     Created 2 special nets and 8 connections.
+[INFO ODB-0133]     Created 5 nets and 8 connections.
+Driver    length delay
+u2/Z manhtn 1500.4 steiner 1500.4 0.30
+u3/Z manhtn 1.1 steiner 1.1 0.00
+u4/Z manhtn 1.1 steiner 1.1 0.00
+in1 manhtn 0.7 steiner 0.7 0.00
+u1/Z manhtn 0.4 steiner 0.4 0.00
+[INFO RSZ-0037] Found 1 long wires.
+[INFO RSZ-0038] Inserted 3 buffers in 1 nets.
+[INFO RSZ-0039] Resized 2 instances.
+Driver    length delay
+u2/Z manhtn 792.7 steiner 792.7 0.08
+max_length3/Z manhtn 790.8 steiner 790.8 0.08
+wire1/Z manhtn 716.2 steiner 716.2 0.07
+wire2/Z manhtn 715.3 steiner 715.3 0.07
+u3/Z manhtn 1.1 steiner 1.1 0.00
+u4/Z manhtn 1.1 steiner 1.1 0.00
+u1/Z manhtn 0.8 steiner 0.8 0.00
