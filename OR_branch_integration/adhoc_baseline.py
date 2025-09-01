@@ -193,8 +193,6 @@ def estimate_net_wirelength_and_buffer(dbu, pin_locs, sink_caps=None,
 
     # Estimate the number of buffers required.
     numBuffers = totalCap / bufferMaxCap
-    # Optionally, round up if whole buffers are required:
-    # numBuffers = math.ceil(numBuffers)
 
     # Compute the buffer area and apply an additional derating factor.
     rawBufferArea = numBuffers * bufferArea
@@ -221,13 +219,14 @@ def estimate_net_wirelength_and_buffer(dbu, pin_locs, sink_caps=None,
     return result
 
 
-def run_hacky_baseline():
-    parser = argparse.ArgumentParser(description="Run hacky baseline.")
+def run_adhoc_baseline():
+    parser = argparse.ArgumentParser(description="Run adhoc baseline.")
     parser.add_argument('--input', required=True, help='Path to input CSV file')
     parser.add_argument('--output', required=True, help='Path to output CSV file')
+    parser.add_argument('--pathMLBuf', required=True, help='Path to the code directory')
 
     args = parser.parse_args()
-    buf_info_file = '/home/fetzfs_projects/MLBuf/flows/OR_branch_integration/buf_data_oneType.csv'
+    buf_info_file = args.pathMLBuf+'/buf_data.csv'
     buf_info_df = pd.read_csv(buf_info_file)
     net_info_df = pd.read_csv(args.input)
     wireCapPerUnit = 8.88758e-11
@@ -258,18 +257,8 @@ def run_hacky_baseline():
         net_lines = generate_buffer_lines(estimate, net_name)
         all_lines.extend(net_lines)
 
-        # print("Estimated Net Wirelength and Buffer Requirements:")
-        # for key, value in estimate.items():
-        #     print(f"{key}: {value}")
         baseline_buf_count = estimate["numBuffers"]
         save_buffer(estimate, args.output)
-    # After processing all nets, write the accumulated lines to the output files.
-    # with open(args.output, 'w') as f:
-    #     for line in all_lines:
-    #         f.write(line)
-    # with open('hacky_buffer_save0414.csv', 'w') as f2:
-    #     for line in all_lines:
-    #         f2.write(line)
 
 
 def generate_buffer_lines(estimate, net_name):
@@ -281,7 +270,6 @@ def generate_buffer_lines(estimate, net_name):
     # Round the estimated number of buffers to an integer
     float_buf_count = estimate["numBuffers"]
     final_buf_count = int(round(float_buf_count))
-    # print(f"[INFO] Rounded buffer count = {final_buf_count}")
 
     # Calculate the bounding box for the net based on the estimation results
     x_min = estimate["x_min"]
@@ -300,7 +288,6 @@ def generate_buffer_lines(estimate, net_name):
     ly = cy - halfH_expanded
     ux = cx + halfW_expanded
     uy = cy + halfH_expanded
-    # print(f"[INFO] Expanded BBox corners = (lx={lx}, ly={ly}), (ux={ux}, uy={uy})")
 
     # Define the base buffer dimensions
     bufferWidth = 0.76
@@ -335,7 +322,6 @@ def save_buffer(estimate, output_file):
     # -------------- 1. save int numBuffers  ----------------
     float_buf_count = estimate["numBuffers"]
     final_buf_count = int(round(float_buf_count))
-    # print(f"[INFO] Rounded buffer count = {final_buf_count}")
 
     # -------------- 2. calculate xy coor of net bounding box  -------------
     x_min = estimate["x_min"]
@@ -353,8 +339,6 @@ def save_buffer(estimate, output_file):
     ly = cy - halfH_expanded
     ux = cx + halfW_expanded
     uy = cy + halfH_expanded
-
-    # print(f"[INFO] Expanded BBox corners = (lx={lx}, ly={ly}), (ux={ux}, uy={uy})")
 
     # -------------- 3. randomly locate buffers ----------------
     bufferWidth = 0.76
@@ -379,10 +363,8 @@ def save_buffer(estimate, output_file):
             bbox_area = (bbox_ux - bbox_lx) * (bbox_uy - bbox_ly)
 
             f.write(f"{bbox_lx},{bbox_ly},{bbox_ux},{bbox_uy},{bbox_area}\n")
-            # f2.write(f"{bbox_lx},{bbox_ly},{bbox_ux},{bbox_uy},{bbox_area}\n")
 
-    # print(f"[INFO] Saved {final_buf_count} buffers' bounding boxes to {output_file}")
 
 
 if __name__ == '__main__':
-    run_hacky_baseline()
+    run_adhoc_baseline()

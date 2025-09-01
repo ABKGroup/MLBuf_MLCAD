@@ -1,10 +1,9 @@
 import sys
-sys.path.append('MLBuf/OR_branch_integration/mlbuf_utils')
+sys.path.append('MLBuf_MLCAD/OR_branch_integration/mlbuf_utils')
 
 import random
-import time
 
-from mlbuf_utils.util import adjust_cluster_id, build_tree_bottom_up, adjust_model_output
+from mlbuf_utils.util import adjust_model_output
 import torch
 import pandas as pd
 import argparse
@@ -13,13 +12,6 @@ import math
 from mlbuf_utils.model import MLBuf
 from torch.utils.data import Dataset, DataLoader
 
-"""
-This code is used for integrate_OR
-
-OR will call mlbuf_infer.py when all problematic nets in this placement iteration
-are saved in a pre-defined file and MLBuf is used
-
-"""
 
 
 def get_args():
@@ -41,7 +33,7 @@ def get_args():
     parser.add_argument('-input_dim_share', type=int, default=12)
     parser.add_argument('-input_dim_loc', type=int, default=3)
     parser.add_argument('-input_dim_els', type=int, default=5)
-    parser.add_argument('-max_clusters', type=int, default=10)
+    parser.add_argument('-max_clusters', type=int, default=20)
 
     # Scheduled Sampling parameters
     parser.add_argument('-scheduled_sampling_max', type=float, default=1.0,
@@ -98,7 +90,7 @@ def generate_buffer_lines(all_buffers_coor, all_buffers_type, buf_info_df, buf_t
     return lines
 
 
-def write_lines_to_file(lines, output_file, secondary_file):
+def write_lines_to_file(lines, output_file):
     """
     Write accumulated lines to files in one go.
     """
@@ -118,18 +110,11 @@ def inference(model, model_save_path, dataloader, device, buf_info_df, buf_type_
     model.eval()
     all_pred_lines = []  # Accumulate prediction lines across nets
     for i, (layer_data, net_name) in enumerate(dataloader):
-        record_list = []  # record runtime, net size
-        record_list.append(net_name)
-        
-        only_infer_time = 0
-        fea_update_time = 0
-        total_infer_st = time.time()
         with torch.no_grad():
 
             input_features = layer_data['input_feats'].squeeze(0).to(device)
             loc_features = layer_data["loc_feats"].squeeze(0).to(device)
             elc_features = layer_data["elc_feats"].squeeze(0).to(device)
-            record_list.append(len(input_features))
 
             drvrX = layer_data.get("drvr_x", torch.tensor(0.0)).squeeze()
             drvrY = layer_data.get("drvr_y", torch.tensor(0.0)).squeeze()
@@ -140,12 +125,9 @@ def inference(model, model_save_path, dataloader, device, buf_info_df, buf_type_
             still_generating = True
             num_level = 0
             while still_generating:
-                only_infer_start = time.time()
                 buffer_type_logits, buffer_location_logits, cluster_id, cluster_probs, cluster_embed, _, _ = model(
                     input_features, loc_features, elc_features
                 )
-                only_infer_end = time.time()
-                only_infer_time += only_infer_end - only_infer_start
 
                 buffer_type_pred = torch.argmax(buffer_type_logits, dim=-1)
 
@@ -157,7 +139,6 @@ def inference(model, model_save_path, dataloader, device, buf_info_df, buf_type_
                     all_buffers_type.append(buffer_type_pred[yes_buf_mask])
 
                     num_level += 1
-                    fea_update_start = time.time()
                     input_features, loc_features, elc_features, input_features_buf = adjust_model_output(
                         input_features,
                         loc_features,
@@ -168,8 +149,6 @@ def inference(model, model_save_path, dataloader, device, buf_info_df, buf_type_
                         buf_info_df,
                         buf_type_map
                     )
-                    fea_update_end = time.time()
-                    fea_update_time += fea_update_end - fea_update_start
                     input_features = input_features.to(device).float()
                     loc_features = loc_features.to(device).float()
                     elc_features = elc_features.to(device).float()
@@ -189,18 +168,22 @@ def inference(model, model_save_path, dataloader, device, buf_info_df, buf_type_
 
 
 def MLBuf_inference_result():
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    
     parser = argparse.ArgumentParser(description="MLBuf inference.")
     parser.add_argument('--model', required=True, help='Path to the model file')
     parser.add_argument('--input', required=True, help='Path to input CSV file')
     parser.add_argument('--output', required=True, help='Path to output CSV file')
-    parser.add_argument('--timeMLBuf', required=True, help='Path to the model file')
-    parser.add_argument('--clusterNum', required=True, help='Path to the model file')
+    parser.add_argument('--clusterNum', required=True, help='Number of clusters')
+    parser.add_argument('--cudaID', required=True, help='CUDA device ID')
+    parser.add_argument('--pathMLBuf', required=True, help='Path to MLBuf inference code directory')
     args_input = parser.parse_args()
     args = get_args()
     clusterNum = args_input.clusterNum
+    CUDAID = args_input.cudaID
+    device = torch.device("cuda:"+CUDAID+"" if torch.cuda.is_available() else "cpu")
+    code_path = args_input.pathMLBuf
 
-    buf_info_file = '/home/fetzfs_projects/MLBuf/flows/OR_branch_integration/buf_data.csv'
+    buf_info_file = code_path + '/buf_data.csv'
     buf_info_df = pd.read_csv(buf_info_file)
 
     buf_type_map = {
@@ -227,26 +210,18 @@ def MLBuf_inference_result():
     print(f"Cluster Num: {args_input.clusterNum}")
 
     # load data
-    load_data_start = time.time()
     prob_net = args_input.input
     dataset = NetDataset(prob_net)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
     print(f"Number of distinct nets = {len(dataset)}")
-    load_data_end = time.time()
 
     print("Start inference ...")
     all_pred_lines = inference(model, args_input.model, dataloader, device, buf_info_df, buf_type_map)
 
-    # Write all predictions in one file write operation:
     output_file = args_input.output
-    secondary_file = 'mlbuf_buffer_save0414.csv'
-    write_data_st = time.time()
-    write_lines_to_file(all_pred_lines, output_file, secondary_file)
-    write_data_end = time.time()
+    write_lines_to_file(all_pred_lines, output_file)
     return args_input
 
 
 if __name__ == '__main__':
-    time_record_list = []
-    start_time = time.time()
     args_input = MLBuf_inference_result()
