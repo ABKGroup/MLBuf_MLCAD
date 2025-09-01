@@ -1,0 +1,51 @@
+#Edge: BOTTOM
+place_pin -pin_name din[0] -layer metal6 -location {258.255 0} -force_to_die_boundary
+place_pin -pin_name din[1] -layer metal6 -location {202.255 0} -force_to_die_boundary
+place_pin -pin_name din[2] -layer metal6 -location {238.655 0} -force_to_die_boundary
+place_pin -pin_name din[4] -layer metal6 -location {206.175 0} -force_to_die_boundary
+place_pin -pin_name din[5] -layer metal6 -location {243.135 0} -force_to_die_boundary
+place_pin -pin_name din[6] -layer metal6 -location {203.935 0} -force_to_die_boundary
+place_pin -pin_name dstrb -layer metal6 -location {181.535 0} -force_to_die_boundary
+#Edge: RIGHT
+place_pin -pin_name amp[11] -layer metal5 -location {448.555 16.87} -force_to_die_boundary
+place_pin -pin_name din[3] -layer metal5 -location {448.555 196.63} -force_to_die_boundary
+#Edge: TOP
+place_pin -pin_name amp[0] -layer metal6 -location {164.735 448.555} -force_to_die_boundary
+place_pin -pin_name amp[10] -layer metal6 -location {159.135 448.555} -force_to_die_boundary
+place_pin -pin_name amp[1] -layer metal6 -location {150.175 448.555} -force_to_die_boundary
+place_pin -pin_name amp[2] -layer metal6 -location {154.655 448.555} -force_to_die_boundary
+place_pin -pin_name amp[3] -layer metal6 -location {138.415 448.555} -force_to_die_boundary
+place_pin -pin_name amp[4] -layer metal6 -location {157.455 448.555} -force_to_die_boundary
+place_pin -pin_name amp[5] -layer metal6 -location {139.535 448.555} -force_to_die_boundary
+place_pin -pin_name amp[6] -layer metal6 -location {128.895 448.555} -force_to_die_boundary
+place_pin -pin_name amp[7] -layer metal6 -location {126.655 448.555} -force_to_die_boundary
+place_pin -pin_name amp[8] -layer metal6 -location {160.815 448.555} -force_to_die_boundary
+place_pin -pin_name amp[9] -layer metal6 -location {153.535 448.555} -force_to_die_boundary
+place_pin -pin_name clk -layer metal6 -location {423.455 448.555} -force_to_die_boundary
+place_pin -pin_name din[7] -layer metal6 -location {123.295 448.555} -force_to_die_boundary
+place_pin -pin_name douten -layer metal6 -location {185.455 448.555} -force_to_die_boundary
+place_pin -pin_name ena -layer metal6 -location {158.575 448.555} -force_to_die_boundary
+place_pin -pin_name qnt_cnt[0] -layer metal6 -location {122.175 448.555} -force_to_die_boundary
+place_pin -pin_name qnt_cnt[1] -layer metal6 -location {121.055 448.555} -force_to_die_boundary
+place_pin -pin_name qnt_cnt[2] -layer metal6 -location {116.575 448.555} -force_to_die_boundary
+place_pin -pin_name qnt_cnt[3] -layer metal6 -location {119.935 448.555} -force_to_die_boundary
+place_pin -pin_name qnt_cnt[4] -layer metal6 -location {113.775 448.555} -force_to_die_boundary
+place_pin -pin_name qnt_cnt[5] -layer metal6 -location {118.255 448.555} -force_to_die_boundary
+place_pin -pin_name rlen[0] -layer metal6 -location {173.135 448.555} -force_to_die_boundary
+place_pin -pin_name rlen[1] -layer metal6 -location {178.175 448.555} -force_to_die_boundary
+place_pin -pin_name rlen[2] -layer metal6 -location {165.295 448.555} -force_to_die_boundary
+place_pin -pin_name rlen[3] -layer metal6 -location {168.655 448.555} -force_to_die_boundary
+place_pin -pin_name rst -layer metal6 -location {222.975 448.555} -force_to_die_boundary
+place_pin -pin_name size[0] -layer metal6 -location {194.975 448.555} -force_to_die_boundary
+place_pin -pin_name size[1] -layer metal6 -location {196.095 448.555} -force_to_die_boundary
+place_pin -pin_name size[2] -layer metal6 -location {195.535 448.555} -force_to_die_boundary
+place_pin -pin_name size[3] -layer metal6 -location {191.055 448.555} -force_to_die_boundary
+#Edge: LEFT
+place_pin -pin_name qnt_val[0] -layer metal5 -location {0 342.79} -force_to_die_boundary
+place_pin -pin_name qnt_val[1] -layer metal5 -location {0 341.67} -force_to_die_boundary
+place_pin -pin_name qnt_val[2] -layer metal5 -location {0 344.47} -force_to_die_boundary
+place_pin -pin_name qnt_val[3] -layer metal5 -location {0 343.91} -force_to_die_boundary
+place_pin -pin_name qnt_val[4] -layer metal5 -location {0 343.35} -force_to_die_boundary
+place_pin -pin_name qnt_val[5] -layer metal5 -location {0 345.59} -force_to_die_boundary
+place_pin -pin_name qnt_val[6] -layer metal5 -location {0 342.23} -force_to_die_boundary
+place_pin -pin_name qnt_val[7] -layer metal5 -location {0 346.15} -force_to_die_boundary
