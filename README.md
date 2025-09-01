@@ -28,6 +28,7 @@ MLBuf/
 │   └── OR_scripts            # OpenROAD scripts for global placement
 ├── train.py                  # Entry point for training the model
 ├── OR_branch_integration/    # MLBuf-RePlAce
+├── OR_inputs/                # Designs & platform
 ├── LICENSE                   # License
 └── README.md                 # Project documentation
 ```
@@ -48,7 +49,7 @@ results/
 ```
 
 ## Integrating MLBuf into OpenROAD for MLBuf-RePlAce
-1. **Build OpenROAD** using the version [OpenROAD (mlbuf-public-release branch)](https://github.com/ytliu8464/OpenROAD/tree/mlbuf-public-release) under OR_branch_integration directory
+1. **Build OpenROAD** in the OR_branch_integration directory using the version [OpenROAD (mlbuf-public-release branch)](https://github.com/ytliu8464/OpenROAD/tree/mlbuf-public-release) 
 ```bash
 cd OR_branch_integration
 git clone --recursive -b mlbuf-public-release git@github.com:ytliu8464/OpenROAD.git
