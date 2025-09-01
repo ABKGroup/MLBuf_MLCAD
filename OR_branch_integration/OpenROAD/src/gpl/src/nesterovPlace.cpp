@@ -507,7 +507,7 @@ int NesterovPlace::doNesterovPlace(int start_iter)
           std::cout << "[INFO] env_cluster = " << env_cluster << std::endl;
           
           log_->report("[INFO] MLBuf is used");
-          std::string cmd = "python /home/fetzfs_projects/timer_calibration/MLBuf_reproduce/MLBuf_MLCAD/OR_branch_integration/mlbuf_infer.py "; 
+          std::string cmd = "/home/tool/anaconda3/envs/zhiang/bin/python /home/dgx_projects/MLBuf/virtual_buffer/MLBuf/mlbuf_infer.py "; 
           cmd += "--model "+ model_pt + " "; 
           cmd += "--input "+ prob_net + " "; 
           cmd += "--output "+ output_file + " ";
@@ -524,12 +524,12 @@ int NesterovPlace::doNesterovPlace(int start_iter)
             log_->report("[INFO] Hack-y baseline is used");
             const std::string prob_net = std::getenv("INPUT"); // save all problematic nets
             std::string output_file = std::getenv("OUTPUT");
-            std::string cmd = "python /home/fetzfs_projects/timer_calibration/MLBuf_reproduce/MLBuf_MLCAD/OR_branch_integration/mlbuf_infer.py/adhoc_baseline.py "; 
+            std::string cmd = "/home/tool/anaconda3/envs/zhiang/bin/python /home/dgx_projects/MLBuf/virtual_buffer/MLBuf/integrate_OR/hacky_baseline.py "; 
             cmd += "--input " + prob_net + " "; 
             cmd += "--output " + output_file;
             int ret = std::system(cmd.c_str());
             if (ret != 0) {
-              log_->report("adhoc_baseline.py failed with code {}", ret);
+              log_->report("hacky_baseline.py failed with code {}", ret);
               exit(1);
             } 
         }
