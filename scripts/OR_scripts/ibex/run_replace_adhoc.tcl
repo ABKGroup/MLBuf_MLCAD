@@ -30,8 +30,8 @@ puts "\[INFO\] Running time:   [expr $end - $start] second"
 
 remove_buffers
 
-write_def ${DESIGN}_rsz_hacky.def
-write_db ${DESIGN}_rsz_hacky.odb
+write_def ${DESIGN}_rsz_adhoc.def
+write_db ${DESIGN}_rsz_adhoc.odb
 
 exit
 

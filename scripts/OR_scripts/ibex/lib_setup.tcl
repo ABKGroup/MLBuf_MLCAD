@@ -1,6 +1,6 @@
-set libdir "${proj_dir}/inputs/ng45/lib"
-set lefdir "${proj_dir}/inputs/ng45/lef"
-set qrcdir "${proj_dir}/inputs/ng45/qrc"
+set libdir "${proj_dir}/OR_inputs/nangate45/lib"
+set lefdir "${proj_dir}/OR_inputs/nangate45/lef"
+set qrcdir "${proj_dir}/OR_inputs/nangate45"
 
 set libworst "  
   ${libdir}/NangateOpenCellLibrary_typical.lib \
