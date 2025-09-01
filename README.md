@@ -48,9 +48,14 @@ results/
 ```
 
 ## Integrating MLBuf into OpenROAD for MLBuf-RePlAce
-1. **Build OpenROAD** using the version provided in:
+1. **Build OpenROAD** using the version [OpenROAD (mlbuf-public-release branch)](https://github.com/ytliu8464/OpenROAD/tree/mlbuf-public-release) under OR_branch_integration directory
 ```bash
-OR_branch_integration/OpenROAD
+cd OR_branch_integration
+git clone --recursive -b mlbuf-public-release git@github.com:ytliu8464/OpenROAD.git
+cd OpenROAD
+mkdir build && cd build
+cmake ..
+make -j "$(nproc)"
 ```
 2. Run **MLBuf-RePlAce**
 ```bash
