@@ -67,6 +67,9 @@ mkdir build && cd build
 cmake ..
 make -j "$(nproc)"
 ```
+
+***Note: To fully reproduce results, ensure the execution environment for OpenROAD and ORFS matches ours. The environment setup is provided in env_or.sh.***
+
 2. Run **MLBuf-RePlAce**
 ```bash
 scripts/OR_scripts/${DESIGN_NAME}/run_mlbuf.sh
@@ -113,9 +116,9 @@ Update these environment variables before running:
 ```bash
 mlbuf_run_scripts/logs/{platform}/{design}/(method)/*.log
 ```
-These logs contain the detailed post-route evaluation results used in the paper.
 
-**Note**: To fully reproduce results, ensure the execution environment for OpenROAD and ORFS matches ours. The environment setup is provided in env_or.sh.
+
+***Note: To fully reproduce results, ensure the execution environment for OpenROAD and ORFS matches ours. The environment setup is provided in env_or.sh.***
 
 
 ## Reference
