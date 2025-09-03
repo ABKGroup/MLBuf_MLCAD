@@ -31,7 +31,7 @@ MLBuf/
 │   ├── invs_scripts          # Commercial tool scripts for generating post-route results 
 │   └── OR_scripts            # OpenROAD scripts for global placement
 ├── train.py                  # Entry point for training the model
-├── requirements.txt          # Dependencies for model training
+├── requirements.txt          # Dependencies for the model training
 ├── env_or.sh                 # Environments for OpenROAD and ORFS 
 ├── OR_branch_integration/    # MLBuf-RePlAce
 ├── OR_inputs/                # Designs & platform
