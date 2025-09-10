@@ -61,7 +61,7 @@ results/model_dict/mlbuf-pretrained.pt
 1. **Build OpenROAD** in the OR_branch_integration directory using the version [OpenROAD (mlbuf-public-release branch)](https://github.com/ytliu8464/OpenROAD/tree/mlbuf-public-release) 
 ```bash
 cd OR_branch_integration
-git clone --recursive -b mlbuf-public-release git@github.com:ytliu8464/OpenROAD.git
+git clone --recursive -branch mlbuf-public-release https://github.com/ytliu8464/OpenROAD.git
 cd OpenROAD
 mkdir build && cd build
 cmake ..
@@ -106,6 +106,9 @@ To reproduce the post-route results reported in Table IV, use the global placeme
 **Steps:**
 
 1. Set up and build **OpenROAD-flow-scripts (ORFS)** using the version [ORFS (mlbuf-orfs-public branch)](https://github.com/ytliu8464/OpenROAD-flow-scripts/tree/mlbuf-orfs-public) 
+```bash
+git clone --branch mlbuf-orfs-public https://github.com/ytliu8464/OpenROAD-flow-scripts.git
+```
 
 2. Run automation scripts to generate post-route results:
 ```bash
