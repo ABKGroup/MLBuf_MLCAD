@@ -58,10 +58,10 @@ You can directly use our pre-trained model:
 results/model_dict/mlbuf-pretrained.pt
 ```
 ## Integrating MLBuf into OpenROAD for MLBuf-RePlAce
-1. **Build OpenROAD** in the OR_branch_integration directory using the version [OpenROAD (mlbuf-public-release branch)](https://github.com/ytliu8464/OpenROAD/tree/mlbuf-public-release) 
+1. **Build OpenROAD** in the OR_branch_integration directory using the version [OpenROAD (mlbuf-public-release branch)](https://github.com/ytliu8464/OpenROAD_MLBuf/tree/mlbuf-public-release) 
 ```bash
 cd OR_branch_integration
-git clone --recursive -branch mlbuf-public-release https://github.com/ytliu8464/OpenROAD.git
+git clone --recursive -branch mlbuf-public-release https://github.com/ytliu8464/OpenROAD_MLBuf.git
 cd OpenROAD
 mkdir build && cd build
 cmake ..
