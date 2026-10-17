@@ -9,6 +9,15 @@ built on top of the OpenROAD infrastructure.
 ![MLBuf Model Structure](images/model_structure_details.png)
 
 
+## Important Notice: Unit Conversion Issue (October 2026)
+
+We have confirmed a unit conversion issue in the released MLBuf implementation, as reported in [Issue #6](https://github.com/ABKGroup/MLBuf_MLCAD/issues/6).
+
+We are currently reviewing the implementation. Once issues are resolved and results are verified, we will release the corrected implementation and updated experimental results, and revise the arXiv paper accordingly.
+
+We sincerely thank the researchers who identified and reported this issue for their careful investigation and constructive feedback.
+
+
 
 ## Code Structure
 ```bash
