@@ -1,3 +1,12 @@
+"""Ad-Hoc baseline of MLBuf-RePlAce.
+
+The placer calls this script at every timing-driven trigger:
+    $MLBUF_PYTHON adhoc_baseline.py --input <problem_nets.csv> --pathMLBuf <this directory> --output <boxes.csv>
+
+For every problem net it estimates the number of BUF_X2 buffers from the net's wire and sink capacitance and
+places that many buffer boxes at random locations inside the net bounding box (seed: MLBUF_SEED, default 0).
+Output: one line per buffer, "lx,ly,ux,uy,area" in microns (um, um^2), appended to --output.
+"""
 import pandas as pd
 import argparse
 import os
@@ -165,7 +174,8 @@ def estimate_net_wirelength_and_buffer(dbu, pin_locs, sink_caps=None,
         estSteinerLength = (W + H)
     else:
         # Calculate the aspect ratio (AR); ensure AR >= 1 by using max/min.
-        if W > 0:
+        # Degenerate boxes (collinear pins, W == 0 or H == 0) are treated as AR = 1.
+        if W > 0 and H > 0:
             AR = max(W, H) / min(W, H)
         else:
             AR = 1.0
@@ -175,7 +185,7 @@ def estimate_net_wirelength_and_buffer(dbu, pin_locs, sink_caps=None,
         estSteinerLength = (W + H) * alpha
 
     # Apply the wire derate factor to account for placement inefficiencies.
-    estSteinerLength = estSteinerLength / (dbu * 1e+6)
+    estSteinerLength = estSteinerLength / 1e6   # pin coordinates are in microns; wireCapPerUnit is in F/m
     wireDerate = 3
     deratedLength = estSteinerLength * wireDerate
 
@@ -220,13 +230,14 @@ def estimate_net_wirelength_and_buffer(dbu, pin_locs, sink_caps=None,
 
 
 def run_adhoc_baseline():
+    random.seed(int(os.environ.get("MLBUF_SEED", "0")))   # reproducible buffer locations
     parser = argparse.ArgumentParser(description="Run adhoc baseline.")
     parser.add_argument('--input', required=True, help='Path to input CSV file')
     parser.add_argument('--output', required=True, help='Path to output CSV file')
-    parser.add_argument('--pathMLBuf', required=True, help='Path to the code directory')
+    parser.add_argument('--pathMLBuf', default=None, help='accepted for compatibility')
 
     args = parser.parse_args()
-    buf_info_file = args.pathMLBuf+'/buf_data.csv'
+    buf_info_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'buf_data.csv')
     buf_info_df = pd.read_csv(buf_info_file)
     net_info_df = pd.read_csv(args.input)
     wireCapPerUnit = 8.88758e-11

@@ -1,0 +1,11 @@
+{
+  "coef": {
+    "a_cap": 0.1686127543188516,
+    "b_slew": 0.6027011096003589,
+    "c_slew": 0.048765414985747935,
+    "d_slew": 75.58690107179056
+  },
+  "meta": {
+    "note": "feedback-estimator coefficients of the pre-trained model results/model_dict/mlbuf-v2.pt"
+  }
+}
