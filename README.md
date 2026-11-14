@@ -100,7 +100,7 @@ results/
 ├── mlbuf_v2/       # smoke test: model_best.pt, model_last.pt, log.csv, best_val.json
 └── mlbuf_v2_full/  # reproduction of the released model
 ```
-Any of these checkpoints can be used by `OR_branch_integration/mlbuf_infer.py` and `mlbuf2/infer.py` via `--model`.
+
 
 ## Integrating MLBuf into OpenROAD for MLBuf-RePlAce
 1. **Build OpenROAD** in the OR_branch_integration directory using the version [OpenROAD (mlbuf-v2 branch)](https://github.com/ytliu8464/OpenROAD_MLBuf/tree/mlbuf-v2) 
