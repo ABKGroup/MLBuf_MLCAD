@@ -14,12 +14,12 @@ built on top of the OpenROAD infrastructure.
 This version replaces the MLCAD25 release. It fixes the unit conversion issue reported in [Issue #6](https://github.com/ABKGroup/MLBuf_MLCAD/issues/6) and provides a retrained model, **MLBuf v2**.
 
 What is fixed:
-- **Unit conversion.** Predicted buffer boxes (microns) are converted to DBU before their area is reserved in the placer. Previously no area was reserved.
-- **Net weights.** MLBuf-RePlAce keeps the slack-based net weights of TD-RePlAce. Previously they were disabled.
-- **Model.** MLBuf v2 is trained with unbuffered nets as negative samples and can predict "no buffer" for a net. The fallback buffer of the previous model is removed.
+- **Unit conversion.** Predicted buffer boxes (microns) are converted to DBU before their area is reserved in the placer. 
+- **Model.** MLBuf v2 is trained with unbuffered nets as negative samples and can predict "no buffer" for a net. 
 - **Reproducibility.** Inference is deterministic. The Ad-Hoc baseline is seeded.
-- **Ad-Hoc baseline.** The wire capacitance unit is corrected.
-- **Robustness.** Environment variables are read safely by the placer.
+<!-- - **Ad-Hoc baseline.** The wire capacitance unit is corrected. -->
+<!-- - **Robustness.** Environment variables are read safely by the placer. -->
+<!-- - **Net weights.** MLBuf-RePlAce keeps the slack-based net weights of TD-RePlAce.  -->
 
 The MLBuf-RePlAce and Ad-Hoc results in Tables IV and V of the MLCAD25 paper were produced with the unit conversion issue and are superseded. Updated results will be reported in the revised arXiv paper. The MLCAD25 release remains available at commit `a10d262`.
 
@@ -63,7 +63,7 @@ MLBuf/
 ```
 
 ## Training MLBuf
-To train MLBuf, run the following command (Python >= 3.9):
+To train MLBuf v2, run the following command (Python >= 3.9):
 ```bash
 pip install -r requirements.txt
 python train.py
@@ -79,7 +79,7 @@ You can directly use our pre-trained model:
 ```bash
 results/model_dict/mlbuf-v2.pt
 ```
-***Note: The pre-trained model is trained on ibex, jpeg, ariane133, ariane136, black_parrot and bsg_chip. This repository provides the training dataset of ibex and jpeg.***
+***Note: The pre-trained model is trained on ibex, jpeg, ariane133, ariane136, black_parrot and bsg_chip. This repository provides the training dataset of ibex and jpeg. The complete training dataset is available here.***
 
 ## Integrating MLBuf into OpenROAD for MLBuf-RePlAce
 1. **Build OpenROAD** in the OR_branch_integration directory using the version [OpenROAD (mlbuf-v2 branch)](https://github.com/ytliu8464/OpenROAD_MLBuf/tree/mlbuf-v2) 
