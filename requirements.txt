@@ -1,4 +1,7 @@
-torch>=2.2
+# torch is pinned: the released placements (scripts/OR_scripts/*/mlbuf-v2) were produced with torch 2.3.0.
+# Other torch versions give an equivalent but not bit-identical MLBuf v2 placement (see README).
+# CPU-only wheel: pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.3.0
 pandas>=2.2
 numpy>=1.26
 scipy>=1.11

@@ -69,7 +69,9 @@ MLBuf/
 
 ## Training MLBuf
 
-Python >= 3.9; `pip install -r requirements.txt`.
+Python 3.9 to 3.12 (torch 2.3.0 has no wheels for 3.13); `pip install -r requirements.txt` (CPU-only torch: add `--extra-index-url https://download.pytorch.org/whl/cpu`).
+
+**torch version.** requirements.txt pins `torch==2.3.0`, the version used for the released model and placements. The placer rounds the predicted buffer locations to the placement database grid, so a different torch version can change a coordinate by one database unit at a late trigger (observed with torch 2.14: one of 134 boxes) and the placement then diverges. With torch 2.3.0 the shipped `.def`/`.odb` files are reproduced bit-exactly; with other versions the placement and the downstream results are equivalent but not identical.
 
 **Smoke test** on the two dump sets bundled with the repository (ibex, jpeg; `data/training_data/`):
 ```bash
@@ -120,7 +122,7 @@ make -j "$(nproc)"
 cd scripts/OR_scripts/${DESIGN_NAME}
 ./run_mlbuf.sh
 ```
-Set `MLBUF_PYTHON` to the Python interpreter that has the packages in requirements.txt (default: `python`).
+Set `MLBUF_PYTHON` to the Python interpreter that has the packages in requirements.txt (default: `python`). Use torch 2.3.0 to reproduce the shipped placements bit-exactly (see [Training MLBuf](#training-mlbuf)).
 
 Check that buffer area is reserved at every timing-driven iteration:
 ```bash
