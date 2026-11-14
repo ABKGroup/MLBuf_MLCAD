@@ -237,9 +237,21 @@ def run_adhoc_baseline():
     parser.add_argument('--pathMLBuf', default=None, help='accepted for compatibility')
 
     args = parser.parse_args()
+    # The placer writes the problem-net file only when the trigger has problem nets. A missing, empty or
+    # header-only file therefore means "no problem nets" and must not abort the placement: write nothing
+    # (the output file is left in place, possibly empty) and exit 0.
+    open(args.output, 'a').close()
+    if not os.path.isfile(args.input) or os.path.getsize(args.input) == 0:
+        reason = 'no input file' if not os.path.isfile(args.input) else 'empty input file'
+        print(f"[Adhoc] no problem nets ({reason}); 0 buffers", flush=True)
+        return
+    try:
+        net_info_df = pd.read_csv(args.input)
+    except pd.errors.EmptyDataError:
+        print("[Adhoc] no problem nets (empty input file); 0 buffers", flush=True)
+        return
     buf_info_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'buf_data.csv')
     buf_info_df = pd.read_csv(buf_info_file)
-    net_info_df = pd.read_csv(args.input)
     wireCapPerUnit = 8.88758e-11
     dbu = 2000
     bufferRow = buf_info_df[buf_info_df["buf_type"] == "BUF_X2"]
@@ -270,6 +282,24 @@ def run_adhoc_baseline():
 
         baseline_buf_count = estimate["numBuffers"]
         save_buffer(estimate, args.output)
+
+    # Consume the placer's problem-net file ($INPUT): the placer rewrites it only when a trigger has problem
+    # nets, so without this a trigger with none would re-use the previous trigger's nets. A dump file passed
+    # by hand is never touched; MLBUF_KEEP_INPUT=1 disables the truncation.
+    consume_input(args.input)
+
+
+def consume_input(path):
+    ref = os.environ.get("INPUT", "")
+    try:
+        is_placer_file = bool(ref) and os.path.isfile(path) and os.path.samefile(path, ref)
+    except OSError:
+        is_placer_file = False
+    if is_placer_file and os.environ.get("MLBUF_KEEP_INPUT", "0") != "1":
+        try:
+            open(path, 'w').close()
+        except OSError as e:
+            print(f"[Adhoc] warning: could not truncate {path}: {e}", flush=True)
 
 
 def generate_buffer_lines(estimate, net_name):
