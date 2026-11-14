@@ -4,10 +4,10 @@ An open-source learning-driven virtual
 buffering-aware analytical global placement framework, 
 built on top of the OpenROAD infrastructure.
 
-[Paper link](https://vlsicad.ucsd.edu/Publications/Conferences/416/c416.pdf) (Best Artifact Award, MLCAD25)
-
+<!-- [Paper link](https://vlsicad.ucsd.edu/Publications/Conferences/416/c416.pdf) (Best Artifact Award, MLCAD25) -->
+<!-- 
 ![MLBuf-RePlAce Workflow](images/workflow_mlbuf_replace.png)
-
+ -->
 
 ## Important Notice: MLBuf v2 (November 2026)
 
