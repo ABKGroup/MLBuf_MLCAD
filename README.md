@@ -16,10 +16,11 @@ This version replaces the MLCAD25 release. It fixes the unit conversion issue re
 What is fixed:
 - **Unit conversion.** Predicted buffer boxes (microns) are converted to DBU before their area is reserved in the placer. 
 - **Model.** MLBuf v2 is trained with unbuffered nets as negative samples and can predict "no buffer" for a net. 
+- **Net weights.** MLBuf-RePlAce keeps the slack-based net weights of TD-RePlAce. 
 - **Reproducibility.** Inference is deterministic. The Ad-Hoc baseline is seeded.
 <!-- - **Ad-Hoc baseline.** The wire capacitance unit is corrected. -->
 <!-- - **Robustness.** Environment variables are read safely by the placer. -->
-<!-- - **Net weights.** MLBuf-RePlAce keeps the slack-based net weights of TD-RePlAce.  -->
+
 
 The MLBuf-RePlAce and Ad-Hoc results in Tables IV and V of the MLCAD25 paper were produced with the unit conversion issue and are superseded. Updated results will be reported in the revised arXiv paper. The MLCAD25 release remains available at commit `a10d262`.
 
