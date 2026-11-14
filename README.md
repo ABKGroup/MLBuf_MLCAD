@@ -18,14 +18,11 @@ What is fixed:
 - **Model.** MLBuf v2 is trained with unbuffered nets as negative samples and can predict "no buffer" for a net. 
 - **Net weights.** MLBuf-RePlAce keeps the slack-based net weights of TD-RePlAce. 
 - **Reproducibility.** Inference is deterministic. The Ad-Hoc baseline is seeded.
-- **Robustness.** A timing-driven trigger without problem nets no longer aborts the placement: the resizer always writes the problem-net file (header-only when empty), and the MLBuf / Ad-Hoc hooks return an empty box list and consume the file after reading it.
-<!-- - **Ad-Hoc baseline.** The wire capacitance unit is corrected. -->
-<!-- - **Robustness.** Environment variables are read safely by the placer. -->
-
 
 The MLBuf-RePlAce and Ad-Hoc results in Tables IV and V of the MLCAD25 paper were produced with the unit conversion issue and are superseded. Updated results will be reported in the revised arXiv paper. The MLCAD25 release remains available at commit `a10d262`.
 
-We sincerely thank the researchers who identified and reported this issue for their careful investigation and constructive feedback.
+We sincerely thank Cezar Trisca Vicol from Partcl
+for identifying and reporting this issue.
 
 
 
@@ -71,7 +68,7 @@ MLBuf/
 
 Python 3.9 to 3.12 (torch 2.3.0 has no wheels for 3.13); `pip install -r requirements.txt` (CPU-only torch: add `--extra-index-url https://download.pytorch.org/whl/cpu`).
 
-**torch version.** requirements.txt pins `torch==2.3.0`, the version used for the released model and placements. The placer rounds the predicted buffer locations to the placement database grid, so a different torch version can change a coordinate by one database unit at a late trigger (observed with torch 2.14: one of 134 boxes) and the placement then diverges. With torch 2.3.0 the shipped `.def`/`.odb` files are reproduced bit-exactly; with other versions the placement and the downstream results are equivalent but not identical.
+**torch version.** requirements.txt pins `torch==2.3.0`, the version used for the released model and placements. With torch 2.3.0 the shipped `.def`/`.odb` files are reproduced bit-exactly; with other versions the placement and the downstream results are equivalent but not identical.
 
 **Smoke test** on the two dump sets bundled with the repository (ibex, jpeg; `data/training_data/`):
 ```bash
