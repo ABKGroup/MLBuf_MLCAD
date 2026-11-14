@@ -1,0 +1,24 @@
+# MLBuf v2: the recipe of the released pre-trained model (results/model_dict/mlbuf-v2.pt).
+# Needs the complete training data (see DATA.md / README): MLBUF_TRAINING_DATA=<extracted release dir>.
+# Sources are defined in mlbuf2/sources.py; the train / validation split is made by net within each design.
+name: mlbuf_v2_full
+seed: 0
+train_sources: [ibex_apr2025, jpeg_apr2025_run2, jpeg_apr2025_run1, ibex_nov2025, jpeg_nov2025, ariane133_apr2025, ariane133_may2025, ariane136_apr2025, ariane136_nov2025, black_parrot_apr2025, bsg_chip_apr2025]
+max_triggers: {}
+val_frac: 0.15
+neg_per_pos_cap: 1.5
+pos_weight_cap: 6.0
+epochs: 30
+lr: 0.0003
+weight_decay: 0.01
+max_tokens: 20000
+max_batch: 160
+workers: 6
+amp: true
+tau0: 1.0
+tau_min: 0.3
+tau_epochs: 12
+hard_after: 999
+model: {d: 128, K: 32, n_layers: 3, n_heads: 4, dropout: 0.1}
+loss_weights: {gate: 1.0, assign: 1.0, type: 1.0, loc: 1.0, none: 0.2, count: 1.0, chamfer: 1.0}
+class_weight_clip: [0.5, 2.0]

@@ -18,6 +18,7 @@ What is fixed:
 - **Model.** MLBuf v2 is trained with unbuffered nets as negative samples and can predict "no buffer" for a net. 
 - **Net weights.** MLBuf-RePlAce keeps the slack-based net weights of TD-RePlAce. 
 - **Reproducibility.** Inference is deterministic. The Ad-Hoc baseline is seeded.
+- **Robustness.** A timing-driven trigger without problem nets no longer aborts the placement: the resizer always writes the problem-net file (header-only when empty), and the MLBuf / Ad-Hoc hooks return an empty box list and consume the file after reading it.
 <!-- - **Ad-Hoc baseline.** The wire capacitance unit is corrected. -->
 <!-- - **Robustness.** Environment variables are read safely by the placer. -->
 
@@ -34,7 +35,8 @@ MLBuf/
 ├── data/                     # Data
 │   ├── buf_data.csv          # Buffer information
 │   ├── feedback_estimator.json # Feature update coefficients
-│   └── training_data         # Training dataset (ibex, jpeg)
+│   ├── DATA.md               # Data card of the training data (sources, provenance, schema)
+│   └── training_data         # Bundled subset of the training data (ibex_apr2025, jpeg_apr2025_run2)
 ├── mlbuf2/                   # MLBuf v2 
 │   ├── schema.py             # Parse the training dataset
 │   ├── sources.py            # Paths and training data sources
@@ -47,7 +49,9 @@ MLBuf/
 │   ├── losses.py             # Loss functions
 │   ├── train.py              # Model training
 │   └── infer.py              # Model inference
-├── configs/                  # Training configuration
+├── configs/                  # Training configurations
+│   ├── mlbuf_v2.yaml         # smoke test on the bundled subset
+│   └── mlbuf_v2_full.yaml    # recipe of the released model (needs the complete training data)
 ├── results/                  # Model results 
 ├── scripts/                  # Scripts for global placement and evaluation
 │   ├── invs_scripts          # Commercial tool scripts for generating post-route results 
@@ -64,23 +68,39 @@ MLBuf/
 ```
 
 ## Training MLBuf
-To train MLBuf v2, run the following command (Python >= 3.9):
+
+Python >= 3.9; `pip install -r requirements.txt`.
+
+**Smoke test** on the two dump sets bundled with the repository (ibex, jpeg; `data/training_data/`):
 ```bash
-pip install -r requirements.txt
-python train.py
+python train.py   # = python train.py configs/mlbuf_v2.yaml [--gpu N]
+```
+The resulting model is much weaker than the released one, because it has seen only two designs (ibex and jpeg). Use it to check the installation, not as a replacement for `mlbuf-v2.pt`.
+
+**Reproducing the released model** `results/model_dict/mlbuf-v2.pt`. It was trained on 11 dump sets of ibex, jpeg,
+ariane133, ariane136, black_parrot and bsg_chip (17.5 GB; 1.8 GB as tar.gz). The complete training data is available on Google Drive:
+[MLBuf v2 training data](https://drive.google.com/drive/folders/1uprj0g7dzjtwjMCDRIP1jfrt0S7VGP9j?usp=sharing).
+```bash
+pip install gdown
+gdown --folder "https://drive.google.com/drive/folders/1uprj0g7dzjtwjMCDRIP1jfrt0S7VGP9j" -O mlbuf_v2_training_data
+cd mlbuf_v2_training_data
+sha256sum -c CHECKSUMS.sha256                      # verify the archives
+for f in *.tar.gz; do tar -xzf "$f"; done          # -> <source>/buffered_trees_{pre,post}_*.csv
+sha256sum -c MANIFEST.sha256                       # verify the extracted files
+export MLBUF_TRAINING_DATA=$PWD
+cd /path/to/MLBuf_MLCAD
+python train.py configs/mlbuf_v2_full.yaml --gpu 0
 ```
 
-Results are written to results/:
+
+Results are written to `results/<config name>/`:
 ```bash
 results/
-├── model_dict/     # pre-trained model (.pt)
-└── mlbuf_v2/       # trained model (model_best.pt), training log (log.csv)
+├── model_dict/     # released model mlbuf-v2.pt
+├── mlbuf_v2/       # smoke test: model_best.pt, model_last.pt, log.csv, best_val.json
+└── mlbuf_v2_full/  # reproduction of the released model
 ```
-You can directly use our pre-trained model:
-```bash
-results/model_dict/mlbuf-v2.pt
-```
-***Note: The pre-trained model is trained on ibex, jpeg, ariane133, ariane136, black_parrot and bsg_chip. This repository provides the training dataset of ibex and jpeg, enough for `python train.py` to run as a smoke test. The complete training dataset is available [here](https://drive.google.com/drive/folders/1uprj0g7dzjtwjMCDRIP1jfrt0S7VGP9j?usp=sharing).***
+Any of these checkpoints can be used by `OR_branch_integration/mlbuf_infer.py` and `mlbuf2/infer.py` via `--model`.
 
 ## Integrating MLBuf into OpenROAD for MLBuf-RePlAce
 1. **Build OpenROAD** in the OR_branch_integration directory using the version [OpenROAD (mlbuf-v2 branch)](https://github.com/ytliu8464/OpenROAD_MLBuf/tree/mlbuf-v2) 

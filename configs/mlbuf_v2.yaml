@@ -1,8 +1,9 @@
-# MLBuf v2 training configuration.
+# MLBuf v2 smoke-test configuration: the two sources bundled with the repository (ibex, jpeg). The model it
+# produces is far weaker than the released mlbuf-v2.pt; use configs/mlbuf_v2_full.yaml with the complete data for that.
 # Sources are defined in mlbuf2/sources.py; the train / validation split is made by net within each design.
 name: mlbuf_v2
 seed: 0
-train_sources: [ibex, jpeg]
+train_sources: [ibex_apr2025, jpeg_apr2025_run2]
 max_triggers: {}
 val_frac: 0.15
 neg_per_pos_cap: 1.5
