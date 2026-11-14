@@ -80,7 +80,7 @@ You can directly use our pre-trained model:
 ```bash
 results/model_dict/mlbuf-v2.pt
 ```
-***Note: The pre-trained model is trained on ibex, jpeg, ariane133, ariane136, black_parrot and bsg_chip. This repository provides the training dataset of ibex and jpeg. The complete training dataset is available here.***
+***Note: The pre-trained model is trained on ibex, jpeg, ariane133, ariane136, black_parrot and bsg_chip. This repository provides the training dataset of ibex and jpeg, enough for `python train.py` to run as a smoke test. The complete training dataset is available [here](https://drive.google.com/drive/folders/1uprj0g7dzjtwjMCDRIP1jfrt0S7VGP9j?usp=sharing).***
 
 ## Integrating MLBuf into OpenROAD for MLBuf-RePlAce
 1. **Build OpenROAD** in the OR_branch_integration directory using the version [OpenROAD (mlbuf-v2 branch)](https://github.com/ytliu8464/OpenROAD_MLBuf/tree/mlbuf-v2) 
