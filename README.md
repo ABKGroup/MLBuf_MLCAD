@@ -4,7 +4,7 @@ An open-source learning-driven virtual
 buffering-aware analytical global placement framework, 
 built on top of the OpenROAD infrastructure.
 
-<!-- [Paper link](https://vlsicad.ucsd.edu/Publications/Conferences/416/c416.pdf) (Best Artifact Award, MLCAD25) -->
+[Paper link](https://vlsicad.ucsd.edu/Publications/Conferences/416/c416.pdf) (MLCAD25)
 <!-- 
 ![MLBuf-RePlAce Workflow](images/workflow_mlbuf_replace.png)
  -->
@@ -21,9 +21,7 @@ What is fixed:
 
 The MLBuf-RePlAce and Ad-Hoc results in Tables IV and V of the MLCAD25 paper were produced with the unit conversion issue and are superseded. Updated results will be reported in the revised arXiv paper. The MLCAD25 release remains available at commit `a10d262`.
 
-We sincerely thank Cezar Trisca Vicol from Partcl
-for identifying and reporting this issue.
-
+We sincerely thank Cezar Trisca Vicol and his colleagues at Partcl for identifying and reporting this issue.
 
 
 ## Code Structure
@@ -115,6 +113,20 @@ make -j "$(nproc)"
 ***Note: To fully reproduce results, ensure the execution environment for OpenROAD and ORFS matches ours. The environment setup is provided in env_or.sh.***
 
 2. Run **MLBuf-RePlAce**
+
+Five NanGate45 designs are set up under `scripts/OR_scripts/<DESIGN_NAME>`, with their ORFS inputs (floorplan, IO placement, SDC) under `OR_inputs/<DESIGN_NAME>`:
+
+| DESIGN_NAME | ORFS design | clock period  | in the MLBuf v2 training data |
+|---|---|---|---|
+| ibex | ibex | 2.2 ns | yes |
+| jpeg_encoder | jpeg | 1.4 ns | yes |
+| swerv_wrapper | swerv_wrapper | 2.0 ns  | no |
+| tinyRocket | tinyRocket | 1.4 ns  | no |
+| dynamic_node | dynamic_node | 5.5 ns |  no |
+
+ibex and jpeg_encoder are the designs of the MLCAD'25 paper; the other three were added for the revised results. 
+<!-- tinyRocket's two fakeram macros have no liberty model during global placement (the ORFS flow loads it downstream); this is how the reported results were produced. -->
+
 ```bash
 cd scripts/OR_scripts/${DESIGN_NAME}
 ./run_mlbuf.sh
@@ -162,18 +174,20 @@ To generate post-route results, use the global placement results as the starting
 git clone --branch mlbuf-orfs-v2 https://github.com/ytliu8464/OpenROAD-flow-scripts.git
 ```
 
-2. Run the automation script to generate post-route results:
+2. Run the automation script to generate post-route results (ORFS calls `python3` from PATH and needs PyYAML, so activate the environment of requirements.txt first):
 ```bash
 export FLOW_HOME=/path/to/OpenROAD-flow-scripts/flow
 scripts/OR_scripts/run_orfs.sh ${DESIGN_NAME} ${METHOD}
 ```
-- **DESIGN_NAME**: ibex, jpeg_encoder
+- **DESIGN_NAME**: ibex, jpeg_encoder, swerv_wrapper, tinyRocket, dynamic_node
 - **METHOD**: mlbuf, adhoc, no_timing, rsz_virtual
 
 3. After the run completes, the script prints WNS, TNS, power and routed wirelength. All metrics are available in:
 ```bash
 scripts/OR_scripts/${DESIGN_NAME}/orfs_${METHOD}/logs/nangate45/*/run/*.log
 ```
+
+Run-to-run differences of a few ns of TNS are within the flow's sensitivity to sub-site placement perturbations on every design; see the per-design standard deviations in the revised paper.
 
 ***Note: To fully reproduce results, ensure the execution environment for OpenROAD and ORFS matches ours. The environment setup is provided in env_or.sh.***
 
