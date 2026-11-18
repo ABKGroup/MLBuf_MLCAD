@@ -4,10 +4,18 @@ An open-source learning-driven virtual
 buffering-aware analytical global placement framework, 
 built on top of the OpenROAD infrastructure.
 
-[Paper link](https://vlsicad.ucsd.edu/Publications/Conferences/416/c416.pdf) (MLCAD25)
+## Papers
+
+- **Revised version (with MLBuf v2):** [arXiv:2506.17247](https://arxiv.org/abs/2506.17247). 
+![Model structure of MLBuf v2](images/MLBuf_v2_model_structure.png)
+
+- **MLCAD 2025 version:** [PDF](https://vlsicad.ucsd.edu/Publications/Conferences/416/c416.pdf). Its MLBuf-RePlAce and Ad-Hoc results in Tables IV and V are superseded (see the notice below). 
 <!-- 
-![MLBuf-RePlAce Workflow](images/workflow_mlbuf_replace.png)
- -->
+
+[Paper link](https://arxiv.org/pdf/2506.17247)
+[The original version](https://vlsicad.ucsd.edu/Publications/Conferences/416/c416.pdf) (MLCAD25) -->
+
+
 
 ## Important Notice: MLBuf v2 (November 2026)
 
@@ -19,7 +27,7 @@ What is fixed:
 - **Net weights.** MLBuf-RePlAce keeps the slack-based net weights of TD-RePlAce. 
 - **Reproducibility.** Inference is deterministic. The Ad-Hoc baseline is seeded.
 
-The MLBuf-RePlAce and Ad-Hoc results in Tables IV and V of the MLCAD25 paper were produced with the unit conversion issue and are superseded. Updated results will be reported in the revised arXiv paper. The MLCAD25 release remains available at commit `a10d262`.
+The MLBuf-RePlAce and Ad-Hoc results in Tables IV and V of the MLCAD25 paper were produced with the unit conversion issue and are superseded. Updated results are reported in the revised [arXiv paper](https://arxiv.org/pdf/2506.17247). The MLCAD25 release remains available at commit `a10d262`.
 
 We sincerely thank Cezar Trisca Vicol and his colleagues at Partcl for identifying and reporting this issue.
 
